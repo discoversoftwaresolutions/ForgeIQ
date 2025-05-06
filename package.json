@@ -1,30 +1,38 @@
 {
-  "name": "agentic-build-system-monorepo",
+  "name": "agentic-build-system-custom-workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "Monorepo for the Agentic Build System",
+  "description": "Custom workspace for the Agentic Build System",
   "scripts": {
-    "dev:forgeiq-ui": "npm run dev --workspace=apps/forgeiq-ui",
-    "build:forgeiq-ui": "npm run build --workspace=apps/forgeiq-ui",
-    "dev:debugiq-core": "npm run dev --workspace=apps/debugiq-core",
-    "build:debugiq-core": "npm run build --workspace=apps/debugiq-core",
+    "// Usage: npm run <script_name> --workspace=<project_path_from_workspaces_array>": "",
+    "// Example: npm run dev --workspace=apps/forgeiq-ui",
+    "// Example: npm run build --workspace=agents/PlanAgent",
+
+    "dev": "echo \"Specify a workspace, e.g., npm run dev --workspace=apps/forgeiq-ui\"",
     "build": "npm run build --workspaces --if-present",
-    "lint": "echo \"Lint script not yet implemented. Consider adding ESLint/Prettier.\"",
-    "test": "echo \"Test script not yet implemented. Consider adding Jest/Vitest.\""
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+
+    "// Global/shared scripts (if any)": "",
+    "bootstrap": "npm install", // Installs dependencies for all workspaces
+    "clean": "echo \"Clean script to be implemented (e.g., remove node_modules, dist folders)\"",
+
+    "// If you develop custom scripts to parse workspace.json, you'd invoke them here": "",
+    "custom:list-projects": "node ./scripts/workspace-utils.js list", // Example
+    "custom:build-all-apps": "node ./scripts/workspace-utils.js build --type=app" // Example
   },
   "workspaces": [
     "apps/*",
     "agents/*",
     "core/*",
-    "interfaces/*",
+    "interfaces", // If interfaces becomes a package with its own package.json
     "plugins/*",
-    "shared/*",
-    "packages/*" // If you decide to add a generic 'packages' folder
+    "shared/*"  // If shared becomes a package or contains sub-packages
   ],
   "devDependencies": {
     "typescript": "^5.4.5", // Or latest stable
-    "prettier": "^3.2.5", // Optional, but recommended
-    "eslint": "^8.57.0" // Optional, but recommended
-    // Add other shared dev dependencies here
+    "prettier": "^3.2.5",
+    "eslint": "^8.57.0"
+    // Add other shared development dependencies (e.g., for linting, testing)
   }
 }
