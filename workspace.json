@@ -16,7 +16,7 @@
       "type": "app",
       "description": "CLI for agentic build system"
     },
-    // --- AGENTS ---
+    
     "CodeNavAgent": { "path": "agents/CodeNavAgent", "type": "agent", "description": "Proprietary Cursor-like model (semantic embedding + search)" },
     "BuildSurfAgent": { "path": "agents/BuildSurfAgent", "type": "agent", "description": "Proprietary Windsurf-style intent-to-DAG pipeline planner" },
     "PlanAgent": { "path": "agents/PlanAgent", "type": "agent", "description": "Task planning, DAG generation, target resolution" },
@@ -30,19 +30,19 @@
     "ReportingAgent": { "path": "agents/ReportingAgent", "type": "agent", "description": "Logs metrics to dashboards, ELK, or S3" },
     "SecurityAgent": { "path": "agents/SecurityAgent", "type": "agent", "description": "Code scanning, IaC security checks" },
     "GovernanceAgent": { "path": "agents/GovernanceAgent", "type": "agent", "description": "Logs build trails, agent signatures, provenance" },
-    // --- CORE LIBS ---
+    
     "core-build-graph": { "path": "core/build-graph", "type": "lib", "description": "Project DAG management, incremental build graph" },
     "core-task-runner": { "path": "core/task-runner", "type": "lib", "description": "Low-level task execution logic" },
     "core-embeddings": { "path": "core/embeddings", "type": "lib", "description": "CodeNav embedding model + vector DB interface" },
-    // --- INTERFACES ---
+    
     "interfaces-types": { "path": "interfaces/types", "type": "lib", "description": "Shared type definitions" },
     "interfaces-sdk": { "path": "interfaces/sdk", "type": "lib", "description": "Shared SDKs" },
-    // --- PLUGINS ---
+    
     "plugin-github-actions": { "path": "plugins/github-actions", "type": "plugin", "description": "GitHub Actions generators and agents" },
     "plugin-terraform-modules": { "path": "plugins/terraform-modules", "type": "plugin", "description": "ECS, Lambda, S3 IaC" },
     "plugin-amplify-deploy": { "path": "plugins/amplify-deploy", "type": "plugin", "description": "Amplify-specific deployment logic" },
     "plugin-ci-cd-hooks": { "path": "plugins/ci-cd-hooks", "type": "plugin", "description": "Pre/post-deploy agentic hooks" },
-    // --- SHARED LIBS ---
+    
     "shared-utils": { "path": "shared/utils", "type": "lib", "description": "Generic utilities" }
   }
 }
