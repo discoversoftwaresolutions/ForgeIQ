@@ -1,0 +1,15 @@
+# Agentic Build System
+
+The next-generation agentic build and deployment system.
+
+## Overview
+
+This project aims to [briefly describe the project's goals].
+
+## Structure
+
+(We will fill this out later as the project grows, or you can copy the structure we've planned)
+
+## Getting Started
+
+(Instructions for local development - if applicable later - or for understanding the deployed system)
