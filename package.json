@@ -1,0 +1,30 @@
+{
+  "name": "agentic-build-system-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo for the Agentic Build System",
+  "scripts": {
+    "dev:forgeiq-ui": "npm run dev --workspace=apps/forgeiq-ui",
+    "build:forgeiq-ui": "npm run build --workspace=apps/forgeiq-ui",
+    "dev:debugiq-core": "npm run dev --workspace=apps/debugiq-core",
+    "build:debugiq-core": "npm run build --workspace=apps/debugiq-core",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "echo \"Lint script not yet implemented. Consider adding ESLint/Prettier.\"",
+    "test": "echo \"Test script not yet implemented. Consider adding Jest/Vitest.\""
+  },
+  "workspaces": [
+    "apps/*",
+    "agents/*",
+    "core/*",
+    "interfaces/*",
+    "plugins/*",
+    "shared/*",
+    "packages/*" // If you decide to add a generic 'packages' folder
+  ],
+  "devDependencies": {
+    "typescript": "^5.4.5", // Or latest stable
+    "prettier": "^3.2.5", // Optional, but recommended
+    "eslint": "^8.57.0" // Optional, but recommended
+    // Add other shared dev dependencies here
+  }
+}
