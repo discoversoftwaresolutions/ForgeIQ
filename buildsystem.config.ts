@@ -1,4 +1,3 @@
-// buildsystem.config.ts
 interface TaskWeight {
   cpu: number;
   memory: number;
@@ -12,12 +11,11 @@ interface ClearancePolicy {
 
 export interface BuildSystemConfig {
   dagRules: {
-    allowCycles: boolean; // Should generally be false
+    allowCycles: boolean;
     maxDepth?: number;
   };
   taskWeights: Record<string, TaskWeight>;
   clearancePolicies: Record<string, ClearancePolicy>;
-  // Add other system-wide configurations
 }
 
 const config: BuildSystemConfig = {
