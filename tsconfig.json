@@ -1,0 +1,18 @@
+// tsconfig.base.json (or tsconfig.json if this is your primary base)
+{
+  "compilerOptions": {
+    "target": "ES2022", // Or newer
+    "module": "NodeNext", // Or "ESNext" for frontend, "CommonJS" for older Node
+    "moduleResolution": "NodeNext", // Or "Bundler"
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true, // Good for Vite/Babel
+    "noEmit": true, // Typically true for a base config if sub-projects do the emitting
+    "jsx": "react-jsx", // If using React in any sub-project
+    "lib": ["ESNext", "DOM", "DOM.Iterable"] // Add "WebWorker" if needed for agents
+  },
+  "exclude": ["node_modules", "**/dist", "**/build"]
+}
