@@ -1,18 +1,23 @@
-// tsconfig.base.json (or tsconfig.json if this is your primary base)
 {
   "compilerOptions": {
-    "target": "ES2022", // Or newer
-    "module": "NodeNext", // Or "ESNext" for frontend, "CommonJS" for older Node
-    "moduleResolution": "NodeNext", // Or "Bundler"
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "isolatedModules": true, // Good for Vite/Babel
-    "noEmit": true, // Typically true for a base config if sub-projects do the emitting
-    "jsx": "react-jsx", // If using React in any sub-project
-    "lib": ["ESNext", "DOM", "DOM.Iterable"] // Add "WebWorker" if needed for agents
+    "isolatedModules": true,
+    "noEmit": true, // This base config doesn't emit; individual projects will.
+    "jsx": "react-jsx", // For ForgeIQ UI
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "baseUrl": ".", // Allows for path aliases if configured
+    "paths": { // Example path aliases (sub-projects will need to reference these in their tsconfig)
+      "@shared/*": ["shared/*"],
+      "@interfaces/*": ["interfaces/*"],
+      "@core/*": ["core/*"]
+    }
   },
-  "exclude": ["node_modules", "**/dist", "**/build"]
+  "exclude": ["node_modules", "**/dist", "**/build", "**/*.bak"]
 }
