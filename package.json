@@ -4,35 +4,28 @@
   "private": true,
   "description": "Custom workspace for the Agentic Build System",
   "scripts": {
-    "// Usage: npm run <script_name> --workspace=<project_path_from_workspaces_array>": "",
-    "// Example: npm run dev --workspace=apps/forgeiq-ui",
-    "// Example: npm run build --workspace=agents/PlanAgent",
-
-    "dev": "echo \"Specify a workspace, e.g., npm run dev --workspace=apps/forgeiq-ui\"",
+    "bootstrap": "npm install",
     "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present -- --passWithNoTests",
     "lint": "npm run lint --workspaces --if-present",
-
-    "// Global/shared scripts (if any)": "",
-    "bootstrap": "npm install", 
-    "clean": "echo \"Clean script to be implemented (e.g., remove node_modules, dist folders)\"",
-
-    "// If you develop custom scripts to parse workspace.json, you'd invoke them here": "",
-    "custom:list-projects": "node ./scripts/workspace-utils.js list", 
-    "custom:build-all-apps": "node ./scripts/workspace-utils.js build --type=app" 
+    "dev:forgeiq-ui": "npm run dev --workspace=apps/forgeiq-ui",
+    "build:forgeiq-ui": "npm run build --workspace=apps/forgeiq-ui",
+    "dev:debugiq-core": "npm run dev --workspace=apps/debugiq-core",
+    "build:debugiq-core": "npm run build --workspace=apps/debugiq-core",
+    "clean": "echo \"Clean script to be implemented (e.g., remove node_modules, dist folders from all workspaces)\""
   },
   "workspaces": [
     "apps/*",
     "agents/*",
     "core/*",
-    "interfaces", 
+    "interfaces/*",
     "plugins/*",
-    "shared/*"  
+    "shared/*"
   ],
   "devDependencies": {
-    "typescript": "^5.4.5", 
+    "typescript": "~5.4.5",
     "prettier": "^3.2.5",
-    "eslint": "^8.57.0"
-    
+    "eslint": "^8.57.0",
+    "@types/node": "^20.12.12"
   }
 }
