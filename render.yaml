@@ -1,0 +1,93 @@
+# render.yaml
+# Ensure your actual GitHub repo URL is used below for the 'repo' fields.
+
+databases:
+  - name: agentic-redis
+    plan: free # starter, standard etc. for production
+    region: oregon # e.g., oregon, frankfurt, singapore
+    maxmemoryPolicy: noeviction # Recommended for queues/event bus
+
+services:
+  - type: static
+    name: forgeiq-ui
+    env: node # For build environment
+    repo: https://github.com/YOUR_USERNAME/YOUR_REPONAME.git # <<< UPDATE THIS
+    region: oregon
+    rootDir: apps/forgeiq-ui
+    buildFilter:
+      paths:
+        - apps/forgeiq-ui/**
+        - interfaces/**
+        - shared/** # If UI uses shared packages directly
+    branch: main # Or your deployment branch
+    buildCommand: npm install && npm run build
+    publishDir: apps/forgeiq-ui/dist # For Vite, or 'build' for CRA
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_BASE_URL # Or REACT_APP_API_BASE_URL
+        # This will be the URL of your deployed debugiq-core service
+        value: https://debugiq-core-your-render-subdomain.onrender.com # Update after debugiq-core is live
+
+  - type: web
+    name: debugiq-core
+    env: node
+    repo: https://github.com/YOUR_USERNAME/YOUR_REPONAME.git # <<< UPDATE THIS
+    region: oregon
+    rootDir: apps/debugiq-core
+    buildFilter:
+      paths:
+        - apps/debugiq-core/**
+        - core/event-bus.ts # And other relevant core files
+        - core/shared-memory.ts
+        - interfaces/**
+        - shared/**
+    branch: main
+    buildCommand: npm install && npm run build # Ensure 'build' script compiles TS
+    startCommand: node dist/index.js # Or your actual start script
+    healthCheckPath: /api/health # Implement this endpoint in your API
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT # Render injects this, but it's good to be aware
+        value: 10000
+      - key: REDIS_URL
+        fromDatabase:
+          name: agentic-redis
+          property: connectionString
+      - key: LOG_LEVEL
+        value: info
+      # Add other API specific environment variables
+
+  # Example for one agent worker (repeat/adapt for other agents)
+  # Consider if multiple agents can run in one worker service
+  - type: worker
+    name: plan-agent-worker # Example: plan-agent
+    env: node
+    repo: https://github.com/YOUR_USERNAME/YOUR_REPONAME.git # <<< UPDATE THIS
+    region: oregon
+    rootDir: agents/PlanAgent # Each agent in its own directory
+    buildFilter:
+      paths:
+        - agents/PlanAgent/**
+        - core/** # If agents depend on core components
+        - interfaces/**
+        - shared/**
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: node dist/index.js # Assuming PlanAgent's entry point after build is dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL
+        fromDatabase:
+          name: agentic-redis
+          property: connectionString
+      - key: AGENT_NAME
+        value: PlanAgent
+      - key: LOG_LEVEL
+        value: info
