@@ -14,25 +14,25 @@
     "lint": "npm run lint --workspaces --if-present",
 
     "// Global/shared scripts (if any)": "",
-    "bootstrap": "npm install", // Installs dependencies for all workspaces
+    "bootstrap": "npm install", 
     "clean": "echo \"Clean script to be implemented (e.g., remove node_modules, dist folders)\"",
 
     "// If you develop custom scripts to parse workspace.json, you'd invoke them here": "",
-    "custom:list-projects": "node ./scripts/workspace-utils.js list", // Example
-    "custom:build-all-apps": "node ./scripts/workspace-utils.js build --type=app" // Example
+    "custom:list-projects": "node ./scripts/workspace-utils.js list", 
+    "custom:build-all-apps": "node ./scripts/workspace-utils.js build --type=app" 
   },
   "workspaces": [
     "apps/*",
     "agents/*",
     "core/*",
-    "interfaces", // If interfaces becomes a package with its own package.json
+    "interfaces", 
     "plugins/*",
-    "shared/*"  // If shared becomes a package or contains sub-packages
+    "shared/*"  
   ],
   "devDependencies": {
     "typescript": "^5.4.5", // Or latest stable
     "prettier": "^3.2.5",
     "eslint": "^8.57.0"
-    // Add other shared development dependencies (e.g., for linting, testing)
+    
   }
 }
