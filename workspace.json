@@ -1,0 +1,43 @@
+{
+  "version": 1, // Your custom versioning for this manifest
+  "projects": {
+    "forgeiq-ui": {
+      "path": "apps/forgeiq-ui",
+      "type": "app",
+      "description": "ForgeIQ front-end dashboard"
+    },
+    "debugiq-core": {
+      "path": "apps/debugiq-core",
+      "type": "app",
+      "description": "DebugIQ back-end APIs"
+    },
+    "agent-cli": {
+      "path": "apps/agent-cli",
+      "type": "app",
+      "description": "CLI for agentic build system"
+    },
+    "CodeNavAgent": {
+      "path": "agents/CodeNavAgent",
+      "type": "agent",
+      "description": "Semantic embedding and search agent"
+    },
+    // Add entries for all your other apps and agents here
+    // Example:
+    // "PlanAgent": {
+    //   "path": "agents/PlanAgent",
+    //   "type": "agent",
+    //   "description": "Task planning and DAG generation agent"
+    // },
+    "build-graph": {
+      "path": "core/build-graph",
+      "type": "lib",
+      "description": "Project DAG management"
+    },
+    "shared-utils": {
+        "path": "shared/utils", // Assuming utils become a package
+        "type": "lib",
+        "description": "Generic utilities"
+    }
+    // ... and so on for all items in apps/, agents/, core/, plugins/, shared/ that are distinct 'projects'
+  }
+}
