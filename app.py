@@ -1,10 +1,17 @@
 import streamlit as st
-import requests
 
-st.title("ForgeIQ Agent Overview")
-error_input = st.text_area("Paste an error log to analyze")
+st.set_page_config(page_title="ForgeIQ: Agentic Build System", layout="wide")
+st.title("ForgeIQ")
 
-if st.button("Diagnose"):
-    res = requests.post("http://localhost:8000/analyze", json={"error_log": error_input})
-    result = res.json()
-    st.write(f"🧠 Diagnosis: `{result['diagnosis']}` with confidence `{result['confidence'] * 100:.2f}%`")
+st.markdown("""
+Welcome to **ForgeIQ**, the most advanced agentic build orchestration system in the world.
+
+This dashboard will evolve to show:
+- ✅ Agent status and health
+- 🧠 DAG execution plans
+- 🔍 Real-time test diagnostics from DebugIQ
+- 🩹 Patch recommendations and approval workflows
+- 🚀 CI/CD lifecycle progress
+
+> This is the intelligence layer for your software delivery infrastructure.
+""")
