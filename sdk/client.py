@@ -44,3 +44,9 @@ async def rerun_pipeline(self, project_id: str, dag_id: str) -> Dict[str, Any]:
     endpoint = f"/api/forgeiq/pipelines/executions/{dag_id}/rerun"
     logger.info(f"SDK: Requesting rerun for DAG '{dag_id}' in project '{project_id}'")
     return await self._request("POST", endpoint, json_data={"project_id": project_id})
+
+# In sdk/client.py within ForgeIQClient class
+async def list_all_agents(self) -> List[Dict[str, Any]]: # Returns list of AgentRegistrationInfo-like dicts
+    logger.info("SDK: Listing all registered agents.")
+    response_data = await self._request("GET", "/api/forgeiq/agents")
+    return response_data.get("agents", [])
