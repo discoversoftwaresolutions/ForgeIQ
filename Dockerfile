@@ -7,10 +7,13 @@ WORKDIR /app
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV STREAMLIT_SERVER_PORT=8501 
+
 # STREAMLIT_SERVER_HEADLESS means "don't open a browser on start"
 # STREAMLIT_SERVER_ENABLE_CORS=false is often default and good for production
 ENV STREAMLIT_SERVER_HEADLESS=true
-ENV STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=true # Good practice
+
+# Good practice: Enable XSRF protection for the server
+ENV STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=true
 
 # Copy the SDK directory first if it's co-located and might change less often than app code
 # Assuming your 'sdk' directory (with ForgeIQClient etc.) is in the root of this UI repo
