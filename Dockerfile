@@ -26,14 +26,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy the rest of the Streamlit application files
 COPY ./dashboard.py .
 COPY ./pages /app/pages/
-COPY ./assets /app/assets/ # If you have an assets folder
+COPY ./assets /app/assets/  # If you have an assets folder
 
 EXPOSE 8501
 
 # Command to run the Streamlit application
-# Railway will inject a $PORT environment variable. Streamlit can use this if configured,
-# or Railway will map its $PORT to the EXPOSEd port (8501).
-# Using --server.port $PORT is often more direct.
-# However, Streamlit uses --server.port without $ by default.
-# We set STREAMLIT_SERVER_PORT env var above, which Streamlit should pick up.
 CMD ["streamlit", "run", "dashboard.py", "--server.address=0.0.0.0"]
