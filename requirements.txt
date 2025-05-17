@@ -1,0 +1,11 @@
+# ========================================
+# 📁 requirements.txt (for ForgeIQ-ui)
+# ========================================
+streamlit>=1.33.0 # Or latest stable
+httpx>=0.27.0     # Required by the ForgeIQ Python SDK
+pandas>=2.0.0     # Useful for st.dataframe and data manipulation in UI
+pydantic>=2.0.0   # If SDK models or internal UI models use Pydantic explicitly
+
+# Your ForgeIQ SDK is assumed to be co-located or installed.
+# If it were a pip-installable package, you'd list it here:
+# forgeiq_sdk==0.1.0
