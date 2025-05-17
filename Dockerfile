@@ -26,8 +26,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy the rest of the Streamlit application files
 COPY ./dashboard.py .
 COPY ./pages /app/pages/
-# Copy the assets folder if available
-COPY ./assets /app/assets/
+
+# Optional: Copy the assets folder if available in the build context.
+# If you do have an assets folder, uncomment the next line and make sure the folder exists.
+# COPY ./assets /app/assets/
+# Otherwise, create an empty assets folder in the image.
+RUN mkdir -p /app/assets
 
 EXPOSE 8501
 
