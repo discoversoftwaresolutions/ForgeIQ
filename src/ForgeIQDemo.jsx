@@ -198,11 +198,14 @@ const styles = `
 
 // === API and WebSocket Endpoints ===
 // REMINDER: Update these to your actual production domains
-const FORGEIQ_API_ENDPOINT = "https://forgeiq-backend-production.up.railway.app/demo/pipeline";
-const FORGEIQ_WS_ENDPOINT = "wss://forgeiq-backend-production.up.railway.app/ws/tasks/updates";
-const SDK_GITHUB_URL = "https://github.com/your-org/forgeiq-sdk";
-const OPTISYS_URL = "https://optisysagent-production.up.railway.app";
-const STRIPE_CHECKOUT_ENDPOINT = "https://forgeiq-backend-production.up.railway.app/api/create-checkout-session";
+// Use the backend host for REST + WebSocket
+export const FORGEIQ_API_ENDPOINT = "https://forgeiq-backend-production.up.railway.app/demo/pipeline";
+export const FORGEIQ_WS_ENDPOINT = "wss://forgeiq-backend-production.up.railway.app/ws/tasks/updates";
+
+// Keep these if they’re real:
+export const SDK_GITHUB_URL = "https://github.com/your-org/forgeiq-sdk";
+export const OPTISYS_URL = "https://optisysagent-production.up.railway.app";
+export const STRIPE_CHECKOUT_ENDPOINT = "https://forgeiq-backend-production.up.railway.app/api/create-checkout-session";
 
 // --- Stripe Integration ---
 const STRIPE_PUBLIC_KEY = 'pk_test_...'; // Replace with your actual Stripe public key
