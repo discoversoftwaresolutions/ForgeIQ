@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
 
 // === Minimal CSS for a clean look ===
 const styles = `
@@ -200,7 +201,13 @@ const styles = `
 const FORGEIQ_API_ENDPOINT = "https://your-forgeiq-backend.com/demo/pipeline";
 const FORGEIQ_WS_ENDPOINT = "wss://your-forgeiq-backend.com/ws/tasks/updates";
 const SDK_GITHUB_URL = "https://github.com/your-org/forgeiq-sdk"; // Replace with your repo
-const OPTISYS_URL = "https://optisys-agent-production.up.railway.app"; // Your Optisys URL
+
+// --- Stripe Integration ---
+const STRIPE_PUBLIC_KEY = 'pk_test_...'; // Replace with your actual Stripe public key
+const STRIPE_CHECKOUT_ENDPOINT = 'https://your-forgeiq-backend.com/api/create-checkout-session';
+
+const stripePromise = loadStripe(STRIPE_PUBLIC_KEY);
+
 const FREE_DEMO_LIMIT = 5;
 
 const ForgeIQDemo = () => {
@@ -227,6 +234,7 @@ const ForgeIQDemo = () => {
       period: "per month",
       recommended: true,
       features: ["All Demo Features", "100,000 runs/month", "Full API Access", "Email Support", "Managed Deployments"],
+      priceId: 'price_1...' // Replace with your Stripe price ID
     },
     {
       id: "enterprise",
@@ -234,6 +242,7 @@ const ForgeIQDemo = () => {
       price: "Custom",
       period: "quote",
       features: ["All Pro Features", "Unlimited Runs", "Multi-cloud Optimization", "Dedicated Agent Support", "Premium SLA"],
+      priceId: null // Enterprise is handled by sales
     }
   ];
 
@@ -314,6 +323,29 @@ const ForgeIQDemo = () => {
     };
   }, [taskId]);
 
+  const handleStripeCheckout = async (priceId) => {
+    // 1. Get Stripe instance
+    const stripe = await stripePromise;
+
+    // 2. Call backend to create Checkout Session
+    const response = await fetch(STRIPE_CHECKOUT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId: priceId })
+    });
+
+    const session = await response.json();
+
+    // 3. Redirect to Stripe's secure page
+    const result = await stripe.redirectToCheckout({
+        sessionId: session.id,
+    });
+
+    if (result.error) {
+        console.error(result.error.message);
+        setError(result.error.message);
+    }
+  };
 
   return (
     <div className="forgeiq-demo">
@@ -401,9 +433,18 @@ const ForgeIQDemo = () => {
                   <a href={SDK_GITHUB_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{textDecoration: 'none'}}>
                     Download SDK
                   </a>
-                  <a href={OPTISYS_URL} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{textDecoration: 'none'}}>
-                    Get API Key on Optisys
-                  </a>
+                  {tier.id === 'enterprise' ? (
+                    <a href="mailto:sales@forgeiq.com" className="btn btn-secondary" style={{textDecoration: 'none'}}>
+                      Contact Sales
+                    </a>
+                  ) : (
+                    <button 
+                      onClick={() => handleStripeCheckout(tier.priceId)}
+                      className="btn btn-secondary"
+                    >
+                      Subscribe
+                    </button>
+                  )}
                 </div>
               )}
             </div>
