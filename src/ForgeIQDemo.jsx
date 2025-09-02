@@ -135,6 +135,64 @@ const styles = `
     justify-content: center;
     gap: 20px;
   }
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+    margin-top: 30px;
+  }
+  .pricing-card {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .pricing-card.recommended {
+    border-color: #1d4ed8;
+    box-shadow: 0 0 0 2px #dbeafe inset;
+  }
+  .plan-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .price {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .price .small {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #6b7280;
+  }
+  .features {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+    margin-top: 25px;
+  }
+  .features li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    color: #374151;
+  }
+  .features li::before {
+    content: "✓";
+    color: #10b981;
+    font-weight: 700;
+  }
+  @media (max-width: 768px) {
+    .pricing-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 `;
 
 // === API and WebSocket Endpoints ===
@@ -143,6 +201,7 @@ const FORGEIQ_API_ENDPOINT = "https://your-forgeiq-backend.com/demo/pipeline";
 const FORGEIQ_WS_ENDPOINT = "wss://your-forgeiq-backend.com/ws/tasks/updates";
 const SDK_GITHUB_URL = "https://github.com/your-org/forgeiq-sdk"; // Replace with your repo
 const OPTISYS_URL = "https://optisys-agent-production.up.railway.app"; // Your Optisys URL
+const FREE_DEMO_LIMIT = 5;
 
 const ForgeIQDemo = () => {
   const [prompt, setPrompt] = useState("Generate a CI/CD pipeline for a Python web service that runs tests, builds a Docker image, and deploys to a Kubernetes cluster.");
@@ -151,14 +210,44 @@ const ForgeIQDemo = () => {
   const [taskProgress, setTaskProgress] = useState(0);
   const [logs, setLogs] = useState([]);
   const [error, setError] = useState(null);
+  const [demoRuns, setDemoRuns] = useState(0);
   const wsRef = useRef(null);
 
+  const pricingTiers = [
+    {
+      id: "free-demo",
+      title: "Free Demo",
+      description: "Test the power of ForgeIQ with limited runs.",
+      features: ["Up to 5 live demo runs", "Basic pipeline generation", "Real-time logs", "No API key required"],
+    },
+    {
+      id: "pro",
+      title: "Professional",
+      price: "$999",
+      period: "per month",
+      recommended: true,
+      features: ["All Demo Features", "100,000 runs/month", "Full API Access", "Email Support", "Managed Deployments"],
+    },
+    {
+      id: "enterprise",
+      title: "Enterprise",
+      price: "Custom",
+      period: "quote",
+      features: ["All Pro Features", "Unlimited Runs", "Multi-cloud Optimization", "Dedicated Agent Support", "Premium SLA"],
+    }
+  ];
+
   const handleStartDemo = async () => {
+    if (demoRuns >= FREE_DEMO_LIMIT) {
+      setError(`Free demo limit of ${FREE_DEMO_LIMIT} runs reached. Please select a plan below to continue.`);
+      return;
+    }
     if (!prompt.trim()) {
       setError("Please enter a prompt to start the demo.");
       return;
     }
 
+    setDemoRuns(prev => prev + 1);
     // 1. Reset state for a new task
     setTaskId(null);
     setTaskStatus("pending");
@@ -244,13 +333,13 @@ const ForgeIQDemo = () => {
               placeholder="Enter a prompt to start the demo..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              disabled={taskStatus === 'pending'}
+              disabled={taskStatus === 'pending' || demoRuns >= FREE_DEMO_LIMIT}
             />
             <div className="btn-container">
               <button 
                 className="btn btn-primary" 
                 onClick={handleStartDemo} 
-                disabled={taskStatus === 'pending' || !prompt.trim()}
+                disabled={taskStatus === 'pending' || !prompt.trim() || demoRuns >= FREE_DEMO_LIMIT}
               >
                 {taskStatus === 'pending' ? 'Starting...' : 'Run Demo'}
               </button>
@@ -258,7 +347,12 @@ const ForgeIQDemo = () => {
           </div>
           
           <div className="status-box">
-            <h4>Live Status:</h4>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <h4>Live Status:</h4>
+                <div style={{color: '#6b7280', fontSize: '0.9rem'}}>
+                    Demo runs used: {demoRuns} / {FREE_DEMO_LIMIT}
+                </div>
+            </div>
             <div className="status-progress">
               <div 
                 className="status-progress-bar" 
@@ -283,15 +377,38 @@ const ForgeIQDemo = () => {
         <section className="call-to-action">
           <h2>Ready to Supercharge Your Builds?</h2>
           <p>ForgeIQ is an API-first platform. Integrate it directly into your projects.</p>
-          <div className="cta-buttons">
-            <a href={SDK_GITHUB_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-              Download the SDK
-            </a>
-            <a href={OPTISYS_URL} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-              Go to Optisys for API Key
-            </a>
-          </div>
         </section>
+
+        <div className="pricing-grid">
+          {pricingTiers.map((tier) => (
+            <div key={tier.id} className={`pricing-card ${tier.recommended ? 'recommended' : ''}`}>
+              <h3 className="plan-title">{tier.title}</h3>
+              {tier.id !== 'free-demo' && (
+                <div className="price">
+                  {tier.price}
+                  <span className="small">{tier.period}</span>
+                </div>
+              )}
+              <ul className="features">
+                {tier.features.map((feature, index) => (
+                  <li key={index}>{feature}</li>
+                ))}
+              </ul>
+              {tier.id === 'free-demo' ? (
+                <a href="#demo" className="btn btn-secondary">Try Demo</a>
+              ) : (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '10px', marginTop: 'auto', width: '100%'}}>
+                  <a href={SDK_GITHUB_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{textDecoration: 'none'}}>
+                    Download SDK
+                  </a>
+                  <a href={OPTISYS_URL} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{textDecoration: 'none'}}>
+                    Get API Key on Optisys
+                  </a>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
         
       </div>
     </div>
