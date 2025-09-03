@@ -3,141 +3,285 @@ import { loadStripe } from "@stripe/stripe-js";
 import Pusher from "pusher-js";
 
 /* ============================
-   Minimal CSS (unchanged)
+   Styles: modern, clean, responsive
 ============================ */
 const styles = `
-  body { font-family: 'Inter', system-ui, sans-serif; margin:0; padding:0; background:#f6f7fb; color:#111827; }
-  .page-container { max-width:900px; margin:0 auto; padding:40px 20px; display:flex; flex-direction:column; align-items:center; text-align:center; }
-  .header { margin-bottom:30px; }
-  .header h1 { font-size:2.8rem; margin:0; font-weight:800; color:#1d4ed8; }
-  .header p { color:#6b7280; font-size:1.1rem; max-width:600px; margin:10px auto 0; }
-  .demo-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:25px; box-shadow:0 4px 6px rgba(0,0,0,0.05); width:100%; max-width:800px; }
-  .input-group { display:flex; flex-direction:column; gap:15px; }
-  textarea { width:100%; min-height:120px; padding:12px; border:1px solid #d1d5db; border-radius:8px; font-size:16px; resize:vertical; }
-  .btn-container { display:flex; gap:10px; justify-content:flex-end; }
-  .btn { padding:12px 24px; border:none; border-radius:8px; font-weight:600; cursor:pointer; transition:background-color .2s; }
-  .btn-primary { background:#1d4ed8; color:#fff; }
-  .btn-primary:hover { background:#1e40af; }
-  .btn-secondary { background:#eef2ff; color:#3730a3; }
-  .btn-secondary:hover { background:#dbeafe; }
-  .status-box { margin-top:20px; padding:20px; border-radius:8px; border:1px solid #e5e7eb; background:#f9fafb; text-align:left; white-space:pre-wrap; word-wrap:break-word; min-height:150px; max-height:300px; overflow-y:auto; }
-  .status-box h4 { margin:0 0 10px 0; color:#1d4ed8; }
-  .status-line { font-family:monospace; font-size:14px; line-height:1.4; }
-  .status-progress { height:8px; background:#e5e7eb; border-radius:4px; margin-top:10px; }
-  .status-progress-bar { height:100%; background:#10b981; border-radius:4px; transition:width .3s ease-in-out; }
-  .call-to-action { margin-top:50px; padding:30px; background:#f0f4ff; border-radius:12px; text-align:center; }
-  .call-to-action h2 { font-size:2rem; color:#1d4ed8; margin:0; }
-  .pricing-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:25px; margin-top:30px; }
-  .pricing-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:25px; text-align:center; display:flex; flex-direction:column; align-items:center; }
-  .pricing-card.recommended { border-color:#1d4ed8; box-shadow:0 0 0 2px #dbeafe inset; }
-  .plan-title { font-size:1.5rem; font-weight:700; margin-bottom:10px; }
-  .price { font-size:2.5rem; font-weight:800; line-height:1; }
-  .price .small { font-size:1rem; font-weight:400; color:#6b7280; margin-left:.4rem; }
-  .features { list-style:none; padding:0; text-align:left; margin-top:25px; }
-  .features li { display:flex; align-items:center; gap:10px; margin-bottom:10px; color:#374151; }
-  .features li::before { content:"✓"; color:#10b981; font-weight:700; }
-  @media (max-width:768px){ .pricing-grid { grid-template-columns:1fr; } }
+  :root {
+    --bg: #0f172a;          /* slate-900 */
+    --panel: rgba(15,23,42,0.55);
+    --border: rgba(255,255,255,0.08);
+    --text: #e5e7eb;        /* gray-200 */
+    --muted: #94a3b8;       /* slate-400 */
+    --brand: #60a5fa;       /* blue-400 */
+    --brand-strong: #3b82f6;/* blue-500 */
+    --accent: #22d3ee;      /* cyan-400 */
+    --success: #10b981;     /* emerald-500 */
+    --warning: #f59e0b;     /* amber-500 */
+    --danger: #ef4444;      /* red-500 */
+  }
+  * { box-sizing: border-box; }
+  html, body, #root { height: 100%; }
+  body {
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(59,130,246,0.25), transparent 60%),
+      radial-gradient(1000px 600px at 90% 10%, rgba(34,211,238,0.2), transparent 60%),
+      linear-gradient(180deg, #0b1020 0%, #0f172a 40%, #0f172a 100%);
+  }
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 48px 20px 64px;
+  }
+  .hero {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 28px;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 960px) {
+    .hero { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(2, 8, 23, 0.45);
+    backdrop-filter: blur(10px);
+  }
+  .hero-card {
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(650px 300px at 120% -20%, rgba(96,165,250,0.25), transparent 60%);
+    pointer-events: none;
+  }
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  @media (max-width: 640px) {
+    .kpis { grid-template-columns: 1fr; }
+  }
+  .kpi {
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: grid;
+    gap: 4px;
+    background: rgba(255,255,255,0.03);
+  }
+  .kpi .label { color: var(--muted); font-size: 12px; letter-spacing: .02em; }
+  .kpi .value { font-weight: 700; font-size: 18px; }
+
+  .title {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 10px 0;
+    background: linear-gradient(90deg, var(--text), #fff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0;
+    max-width: 60ch;
+  }
+
+  .demo {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 10px;
+  }
+  .textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+  }
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  .btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-weight: 700;
+    cursor: pointer;
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    transition: transform .06s ease, border-color .15s ease, background .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); border-color: rgba(96,165,250,0.35); }
+  .btn:active { transform: translateY(0); }
+  .btn-primary {
+    background: linear-gradient(180deg, var(--brand), var(--brand-strong));
+    border-color: transparent;
+    color: white;
+  }
+  .btn-secondary { color: var(--brand); border-color: rgba(96,165,250,0.35); }
+
+  .status {
+    padding: 16px;
+    border-top: 1px dashed var(--border);
+    display: grid;
+    gap: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+  }
+  .status-row { display: flex; justify-content: space-between; align-items: center; }
+  .badge {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(34,197,94,0.1);
+    color: #34d399;
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+  .badge.pending { background: rgba(245,158,11,0.12); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
+  .badge.failed  { background: rgba(239,68,68,0.12);  color: #ef4444; border-color: rgba(239,68,68,0.3); }
+  .badge.finished{ background: rgba(59,130,246,0.13); color: #60a5fa; border-color: rgba(59,130,246,0.35); }
+
+  .progress {
+    height: 10px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress > div {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--success), var(--accent));
+    transition: width .35s ease;
+  }
+  .log {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 13px;
+    color: #d1d5db;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+  .log-line { padding: 2px 0; border-bottom: 1px dashed rgba(255,255,255,0.06); }
+  .muted { color: var(--muted); }
+
+  .plans { margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 960px) { .plans { grid-template-columns: 1fr; } }
+  .plan {
+    padding: 22px;
+    display: grid;
+    gap: 12px;
+    text-align: left;
+  }
+  .plan.recommended { outline: 2px solid rgba(96,165,250,0.45); }
+  .plan h3 { margin: 0; font-size: 18px; letter-spacing: .01em; }
+  .price { font-size: 28px; font-weight: 800; }
+  .features { margin: 6px 0 0; padding: 0 0 0 18px; color: var(--muted); }
 `;
 
 /* ============================
-   Config / Endpoints
-   - REST stays on backend host
-   - Realtime via Soketi (Pusher)
+   Config / Endpoints (env-friendly)
 ============================ */
 // REST
-export const FORGEIQ_API_ENDPOINT =
-  "https://forgeiq-backend-production.up.railway.app/demo/pipeline";
-export const STRIPE_CHECKOUT_ENDPOINT =
-  "https://forgeiq-backend-production.up.railway.app/api/create-checkout-session";
+const FORGEIQ_API_ENDPOINT = "https://forgeiq-backend-production.up.railway.app/demo/pipeline";
+const STRIPE_CHECKOUT_ENDPOINT = "https://forgeiq-backend-production.up.railway.app/api/create-checkout-session";
 
 // Realtime (Pusher/Soketi)
-const VITE_PUSHER_KEY = import.meta.env.VITE_PUSHER_KEY as string;
-const VITE_PUSHER_HOST = import.meta.env.VITE_PUSHER_HOST as string; // e.g., soketi-forgeiq-production.up.railway.app
+const VITE_PUSHER_KEY = import.meta.env.VITE_PUSHER_KEY;
+const VITE_PUSHER_HOST = import.meta.env.VITE_PUSHER_HOST; // e.g., soketi-forgeiq-production.up.railway.app
 const VITE_PUSHER_PORT = Number(import.meta.env.VITE_PUSHER_PORT || 443);
-const VITE_PUSHER_FORCE_TLS =
-  String(import.meta.env.VITE_PUSHER_FORCE_TLS || "true") === "true";
+const VITE_PUSHER_FORCE_TLS = String(import.meta.env.VITE_PUSHER_FORCE_TLS || "true") === "true";
 
 // Stripe
-const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY as string; // DO NOT hardcode
-const stripePromise = loadStripe(STRIPE_PUBLIC_KEY);
+const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+
+// Stripe init
+const stripePromise = STRIPE_PUBLIC_KEY ? loadStripe(STRIPE_PUBLIC_KEY) : Promise.resolve(null);
 
 // Limits
 const FREE_DEMO_LIMIT = 5;
 
-// Type for incoming task updates (align with your backend payload)
-type TaskUpdate = {
-  task_id: string;
-  status?: string;
-  progress?: number;
-  current_stage?: string;
-  logs?: string;
-  details?: Record<string, any>;
-  timestamp?: string;
-};
+// Types
+/**
+ * @typedef {Object} TaskUpdate
+ * @property {string} task_id
+ * @property {string=} status
+ * @property {number=} progress
+ * @property {string=} current_stage
+ * @property {string=} logs
+ * @property {Object=} details
+ * @property {string=} timestamp
+ */
 
-const ForgeIQDemo: React.FC = () => {
+const ForgeIQDemo = () => {
   const [prompt, setPrompt] = useState(
     "Generate a CI/CD pipeline for a Python web service that runs tests, builds a Docker image, and deploys to a Kubernetes cluster."
   );
-  const [taskId, setTaskId] = useState<string | null>(null);
-  const [taskStatus, setTaskStatus] = useState<"idle" | "pending" | "finished" | "failed" | string>("idle");
-  const [taskProgress, setTaskProgress] = useState<number>(0);
-  const [logs, setLogs] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [demoRuns, setDemoRuns] = useState<number>(0);
-  const pusherRef = useRef<Pusher | null>(null);
-  const channelRef = useRef<Pusher["channels"]["channel"] | null>(null);
+  const [taskId, setTaskId] = useState(null);
+  const [taskStatus, setTaskStatus] = useState("idle"); // idle | pending | finished | failed | running | completed
+  const [taskProgress, setTaskProgress] = useState(0);
+  const [logs, setLogs] = useState([]);
+  const [error, setError] = useState(null);
+  const [demoRuns, setDemoRuns] = useState(0);
 
-  const pricingTiers = [
+  const pusherRef = useRef(null);
+  const channelRef = useRef(null);
+
+  // Plans
+  const plans = [
     {
       id: "free-demo",
-      title: "Free Demo",
-      description: "Test the power of ForgeIQ with limited runs.",
-      features: [
-        "Up to 5 live demo runs",
-        "Basic pipeline generation",
-        "Real-time logs",
-        "No API key required",
-      ],
+      name: "Free Demo",
+      desc: "Explore ForgeIQ with limited runs.",
+      features: ["Up to 5 live demo runs", "Basic pipeline generation", "Realtime status", "No API key required"]
     },
     {
       id: "pro",
-      title: "Professional",
+      name: "Professional",
       price: "$999",
-      period: "per month",
+      period: "month",
       recommended: true,
-      features: [
-        "All Demo Features",
-        "100,000 runs/month",
-        "Full API Access",
-        "Email Support",
-        "Managed Deployments",
-      ],
+      features: ["All Demo features", "100,000 runs/month", "Full API Access", "Email Support", "Managed Deployments"],
       priceId: "price_1..." // Replace with your Stripe price ID
     },
     {
       id: "enterprise",
-      title: "Enterprise",
+      name: "Enterprise",
       price: "Custom",
       period: "quote",
-      features: [
-        "All Pro Features",
-        "Unlimited Runs",
-        "Multi-cloud Optimization",
-        "Dedicated Agent Support",
-        "Premium SLA",
-      ],
-      priceId: null,
-    },
+      features: ["All Pro features", "Unlimited runs", "Multi-cloud Optimization", "Dedicated Agent Support", "Premium SLA"],
+      priceId: null
+    }
   ];
 
-  // Initialize Pusher lazily
+  // Init Pusher (once)
   useEffect(() => {
     if (!VITE_PUSHER_KEY || !VITE_PUSHER_HOST) {
-      console.warn("Pusher env vars missing. Realtime disabled.");
+      console.warn("Pusher env missing; realtime disabled.");
       return;
     }
-    // Create once
     if (!pusherRef.current) {
       pusherRef.current = new Pusher(VITE_PUSHER_KEY, {
         wsHost: VITE_PUSHER_HOST,
@@ -145,15 +289,12 @@ const ForgeIQDemo: React.FC = () => {
         wssPort: VITE_PUSHER_PORT,
         forceTLS: VITE_PUSHER_FORCE_TLS,
         enabledTransports: ["ws", "wss"],
-        disableStats: true,
+        disableStats: true
       });
     }
-    return () => {
-      // no-op: keep the client for the lifetime of the SPA
-    };
   }, []);
 
-  // Subscribe to per-task channel when taskId is set
+  // Subscribe when taskId exists
   useEffect(() => {
     if (!taskId || !pusherRef.current) return;
 
@@ -163,39 +304,36 @@ const ForgeIQDemo: React.FC = () => {
       channelRef.current = null;
     }
 
-    // Your backend should trigger to `public-forgeiq.{taskId}` with event name "task-update"
     const channelName = `public-forgeiq.${taskId}`;
-    const channel = pusherRef.current.subscribe(channelName);
-    channelRef.current = channel;
+    const ch = pusherRef.current.subscribe(channelName);
+    channelRef.current = ch;
 
-    const onUpdate = (message: TaskUpdate) => {
-      if (!message || message.task_id !== taskId) return;
-      if (typeof message.progress === "number") setTaskProgress(message.progress);
-      if (message.status) setTaskStatus(message.status);
-      const line = message.logs || message.current_stage;
+    const onUpdate = (/** @type {TaskUpdate} */ msg) => {
+      if (!msg || msg.task_id !== taskId) return;
+      if (typeof msg.progress === "number") setTaskProgress(msg.progress);
+      if (msg.status) setTaskStatus(msg.status);
+      const line = msg.logs || msg.current_stage;
       if (line) setLogs((prev) => [...prev, line]);
 
-      if (message.status === "completed" || message.status === "failed") {
-        // let the task end gracefully; auto-unsub below
+      if (msg.status === "completed" || msg.status === "failed") {
         try { pusherRef.current?.unsubscribe(channelName); } catch {}
         channelRef.current = null;
-        setTaskStatus(message.status === "completed" ? "finished" : "failed");
+        setTaskStatus(msg.status === "completed" ? "finished" : "failed");
       }
     };
 
-    channel.bind("task-update", onUpdate);
+    ch.bind("task-update", onUpdate);
 
-    // Cleanup if component unmounts or taskId changes
     return () => {
       try {
-        channel.unbind("task-update", onUpdate);
+        ch.unbind("task-update", onUpdate);
         pusherRef.current?.unsubscribe(channelName);
       } catch {}
       channelRef.current = null;
     };
   }, [taskId]);
 
-  const handleStartDemo = async () => {
+  const startDemo = async () => {
     if (demoRuns >= FREE_DEMO_LIMIT) {
       setError(`Free demo limit of ${FREE_DEMO_LIMIT} runs reached. Please select a plan below to continue.`);
       return;
@@ -204,7 +342,7 @@ const ForgeIQDemo: React.FC = () => {
       setError("Please enter a prompt to start the demo.");
       return;
     }
-    setDemoRuns((prev) => prev + 1);
+    setDemoRuns((n) => n + 1);
     setTaskId(null);
     setTaskStatus("pending");
     setTaskProgress(0);
@@ -212,158 +350,159 @@ const ForgeIQDemo: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(FORGEIQ_API_ENDPOINT, {
+      const res = await fetch(FORGEIQ_API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-        // credentials: "include", // enable if you rely on cookies
+        body: JSON.stringify({ prompt })
       });
-
-      // If the preflight or CORS fail, response may not be OK
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error((data && (data.detail || data.message)) || "Failed to start demo.");
-      }
-      if (!data.forgeiq_task_id) {
-        throw new Error("Backend did not return forgeiq_task_id.");
-      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Failed to start demo.");
+      if (!data.forgeiq_task_id) throw new Error("Backend did not return forgeiq_task_id.");
       setTaskId(data.forgeiq_task_id);
-    } catch (err: any) {
-      setError(err?.message || "Failed to start demo.");
+    } catch (e) {
+      setError(e.message || "Failed to start demo.");
       setTaskStatus("failed");
     }
   };
 
-  const handleStripeCheckout = async (priceId: string | null, planId: string) => {
+  const checkout = async (priceId, planId) => {
     try {
-      if (!STRIPE_PUBLIC_KEY) {
-        throw new Error("Stripe is not configured. Missing VITE_STRIPE_PUBLIC_KEY.");
-      }
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error("Stripe failed to initialize.");
-
       if (!priceId) {
-        // Enterprise path: route to sales/contact
         window.location.href = "/contact?plan=enterprise";
         return;
       }
+      const stripe = await stripePromise;
+      if (!stripe) throw new Error("Stripe not configured. Missing VITE_STRIPE_PUBLIC_KEY.");
 
-      const resp = await fetch(STRIPE_CHECKOUT_ENDPOINT, {
+      const res = await fetch(STRIPE_CHECKOUT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, planId }),
+        body: JSON.stringify({ priceId, planId })
       });
-
-      const session = await resp.json().catch(() => ({}));
-      if (!resp.ok || !session?.id) {
-        throw new Error(session?.detail || "Failed to create Stripe checkout session.");
-      }
+      const session = await res.json().catch(() => ({}));
+      if (!res.ok || !session?.id) throw new Error(session?.detail || "Unable to create checkout session.");
 
       const result = await stripe.redirectToCheckout({ sessionId: session.id });
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-    } catch (e: any) {
+      if (result.error) throw new Error(result.error.message);
+    } catch (e) {
       console.error(e);
-      setError(e?.message || "Payment error.");
+      setError(e.message || "Payment error.");
     }
   };
+
+  const badgeClass =
+    taskStatus === "pending" ? "badge pending" :
+    taskStatus === "failed"  ? "badge failed"  :
+    taskStatus === "finished"? "badge finished": "badge";
 
   return (
     <div className="forgeiq-demo">
       <style>{styles}</style>
-      <div className="page-container">
-        <header className="header">
-          <h1>ForgeIQ Demo</h1>
-          <p>
-            An agentic orchestration engine for engineering pipelines. Enter a prompt to see ForgeIQ generate, test, and deploy code in real-time.
-          </p>
-        </header>
+      <div className="page">
 
-        <section className="demo-card" id="demo">
-          <div className="input-group">
-            <textarea
-              placeholder="Enter a prompt to start the demo..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              disabled={taskStatus === "pending" || demoRuns >= FREE_DEMO_LIMIT}
-            />
-            <div className="btn-container">
-              <button
-                className="btn btn-primary"
-                onClick={handleStartDemo}
-                disabled={taskStatus === "pending" || !prompt.trim() || demoRuns >= FREE_DEMO_LIMIT}
-              >
-                {taskStatus === "pending" ? "Starting..." : "Run Demo"}
-              </button>
+        {/* HERO */}
+        <div className="hero">
+          <div className="card hero-card">
+            <h1 className="title">ForgeIQ — Agentic Orchestration for Engineering Pipelines</h1>
+            <p className="subtitle">
+              Describe what you want built. ForgeIQ generates, tests, packages, and deploys code — while you watch progress in real time.
+            </p>
+
+            <div className="kpis">
+              <div className="kpi">
+                <span className="label">Runtime</span>
+                <span className="value">seconds to live preview</span>
+              </div>
+              <div className="kpi">
+                <span className="label">Coverage</span>
+                <span className="value">tests & builds</span>
+              </div>
+              <div className="kpi">
+                <span className="label">Targets</span>
+                <span className="value">Docker · K8s · ECS</span>
+              </div>
             </div>
           </div>
 
-          <div className="status-box">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h4>Live Status:</h4>
-              <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>
-                Demo runs used: {demoRuns} / {FREE_DEMO_LIMIT}
+          {/* DEMO PANEL */}
+          <div className="card hero-card">
+            <div className="demo">
+              <textarea
+                className="textarea"
+                placeholder="Enter a prompt to start the demo..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                disabled={taskStatus === "pending" || demoRuns >= FREE_DEMO_LIMIT}
+              />
+              <div className="controls">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => { setPrompt(""); setLogs([]); setError(null); }}
+                  disabled={taskStatus === "pending"}
+                >
+                  Reset
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={startDemo}
+                  disabled={taskStatus === "pending" || !prompt.trim() || demoRuns >= FREE_DEMO_LIMIT}
+                >
+                  {taskStatus === "pending" ? "Starting…" : "Run Demo"}
+                </button>
               </div>
-            </div>
 
-            <div className="status-progress">
-              <div className="status-progress-bar" style={{ width: `${taskProgress}%` }} />
-            </div>
-
-            <div className="status-line" style={{ marginTop: "10px" }}>
-              <strong>Status:</strong> {taskStatus}
-            </div>
-
-            {logs.length > 0 && (
-              <div style={{ marginTop: "10px" }}>
-                <strong>Logs:</strong>
-                {logs.map((log, index) => (
-                  <div key={index} className="status-line">
-                    {log}
+              <div className="status">
+                <div className="status-row">
+                  <div className="muted">Live Status</div>
+                  <div className={badgeClass}>
+                    {taskStatus === "idle" ? "ready" : taskStatus}
                   </div>
-                ))}
+                </div>
+                <div className="progress"><div style={{ width: `${taskProgress}%` }} /></div>
+                <div className="muted">Demo runs used: {demoRuns} / {FREE_DEMO_LIMIT}</div>
+                {error && <div style={{ color: "#fca5a5", fontWeight: 600 }}>{error}</div>}
+                {logs.length > 0 && (
+                  <div className="log">
+                    {logs.map((l, i) => (
+                      <div className="log-line" key={i}>{l}</div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-
-            {error && <div style={{ color: "red", marginTop: "10px" }}>{error}</div>}
+            </div>
           </div>
-        </section>
+        </div>
 
-        <section className="call-to-action">
-          <h2>Ready to Supercharge Your Builds?</h2>
-          <p>ForgeIQ is an API-first platform. Integrate it directly into your projects.</p>
-        </section>
-
-        <div className="pricing-grid">
-          {pricingTiers.map((tier) => (
-            <div key={tier.id} className={`pricing-card ${tier.recommended ? "recommended" : ""}`}>
-              <h3 className="plan-title">{tier.title}</h3>
-              {tier.id !== "free-demo" && (
+        {/* PLANS */}
+        <div className="plans">
+          {plans.map((p) => (
+            <div key={p.id} className={`card plan ${p.recommended ? "recommended" : ""}`}>
+              <h3>{p.name}</h3>
+              {"price" in p && (
                 <div className="price">
-                  {tier.price}
-                  <span className="small">{tier.period}</span>
+                  {p.price} <span className="muted">/ {p.period}</span>
                 </div>
               )}
               <ul className="features">
-                {tier.features.map((feature, index) => (
-                  <li key={index}>{feature}</li>
-                ))}
+                {p.features.map((f, idx) => <li key={idx}>{f}</li>)}
               </ul>
-              {tier.id === "free-demo" ? (
-                <a href="#demo" className="btn btn-secondary">
-                  Try Demo
-                </a>
+              {p.id === "free-demo" ? (
+                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                  <a className="btn" href="#top">What can it build?</a>
+                  <a className="btn btn-primary" href="#top" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                    Try Demo
+                  </a>
+                </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "auto", width: "100%" }}>
-                  <button onClick={() => handleStripeCheckout(tier.priceId, tier.id)} className="btn btn-secondary">
-                    Subscribe
-                  </button>
+                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                  <button className="btn" onClick={() => checkout(p.priceId, p.id)}>Subscribe</button>
+                  <a className="btn btn-secondary" href="/docs">View Docs</a>
                 </div>
               )}
             </div>
           ))}
         </div>
+
       </div>
     </div>
   );
