@@ -2,238 +2,96 @@ import React, { useState, useEffect, useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import Pusher from "pusher-js";
 
-/* ============================
-   Styles: modern, clean, responsive
-============================ */
+/* ========== Styles (modern, responsive) ========== */
 const styles = `
   :root {
-    --bg: #0f172a;          /* slate-900 */
-    --panel: rgba(15,23,42,0.55);
-    --border: rgba(255,255,255,0.08);
-    --text: #e5e7eb;        /* gray-200 */
-    --muted: #94a3b8;       /* slate-400 */
-    --brand: #60a5fa;       /* blue-400 */
-    --brand-strong: #3b82f6;/* blue-500 */
-    --accent: #22d3ee;      /* cyan-400 */
-    --success: #10b981;     /* emerald-500 */
-    --warning: #f59e0b;     /* amber-500 */
-    --danger: #ef4444;      /* red-500 */
+    --bg: #0f172a; --panel: rgba(15,23,42,0.55); --border: rgba(255,255,255,0.08);
+    --text: #e5e7eb; --muted: #94a3b8; --brand: #60a5fa; --brand-strong:#3b82f6;
+    --accent:#22d3ee; --success:#10b981; --warning:#f59e0b; --danger:#ef4444;
   }
   * { box-sizing: border-box; }
   html, body, #root { height: 100%; }
   body {
-    margin: 0;
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     color: var(--text);
     background:
       radial-gradient(1200px 600px at 10% -10%, rgba(59,130,246,0.25), transparent 60%),
       radial-gradient(1000px 600px at 90% 10%, rgba(34,211,238,0.2), transparent 60%),
       linear-gradient(180deg, #0b1020 0%, #0f172a 40%, #0f172a 100%);
   }
-  .page {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 48px 20px 64px;
-  }
-  .hero {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 28px;
-    align-items: center;
-    margin-bottom: 28px;
-  }
-  @media (max-width: 960px) {
-    .hero { grid-template-columns: 1fr; }
-  }
+  .page { max-width: 1080px; margin: 0 auto; padding: 48px 20px 64px; }
+  .hero { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 28px; align-items: center; margin-bottom: 28px; }
+  @media (max-width: 960px) { .hero { grid-template-columns: 1fr; } }
 
   .card {
     background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-    border: 1px solid var(--border);
-    border-radius: 16px;
+    border: 1px solid var(--border); border-radius: 16px; backdrop-filter: blur(10px);
     box-shadow: 0 10px 30px rgba(2, 8, 23, 0.45);
-    backdrop-filter: blur(10px);
   }
-  .hero-card {
-    padding: 28px;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero-card::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(650px 300px at 120% -20%, rgba(96,165,250,0.25), transparent 60%);
-    pointer-events: none;
-  }
-  .kpis {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 16px;
-  }
-  @media (max-width: 640px) {
-    .kpis { grid-template-columns: 1fr; }
-  }
-  .kpi {
-    border: 1px dashed var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    display: grid;
-    gap: 4px;
-    background: rgba(255,255,255,0.03);
-  }
+  .hero-card { padding: 28px; position: relative; overflow: hidden; }
+  .hero-card::after { content:""; position:absolute; inset:0; background: radial-gradient(650px 300px at 120% -20%, rgba(96,165,250,0.25), transparent 60%); pointer-events:none; }
+
+  .title { font-size: 32px; font-weight: 800; line-height: 1.1; margin: 0 0 10px; letter-spacing: -0.02em;
+    background: linear-gradient(90deg, var(--text), #fff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .subtitle { color: var(--muted); font-size: 15px; margin: 0; max-width: 60ch; }
+
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  @media (max-width: 640px) { .kpis { grid-template-columns: 1fr; } }
+  .kpi { border: 1px dashed var(--border); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; background: rgba(255,255,255,0.03); }
   .kpi .label { color: var(--muted); font-size: 12px; letter-spacing: .02em; }
   .kpi .value { font-weight: 700; font-size: 18px; }
 
-  .title {
-    font-size: 32px;
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    margin: 0 0 10px 0;
-    background: linear-gradient(90deg, var(--text), #fff);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .subtitle {
-    color: var(--muted);
-    font-size: 15px;
-    margin: 0;
-    max-width: 60ch;
-  }
-
-  .demo {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin-top: 10px;
-  }
-  .textarea {
-    width: 100%;
-    min-height: 120px;
-    padding: 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--text);
-    font-size: 15px;
-    outline: none;
-  }
-  .controls {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-  }
-  .btn {
-    appearance: none;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    font-weight: 700;
-    cursor: pointer;
-    background: rgba(255,255,255,0.04);
-    color: var(--text);
-    transition: transform .06s ease, border-color .15s ease, background .15s ease;
-  }
+  .demo { display: grid; gap: 16px; margin-top: 10px; }
+  .textarea { width: 100%; min-height: 120px; padding: 14px; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text); font-size: 15px; outline: none; }
+  .controls { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn { appearance: none; border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; font-weight: 700;
+    cursor: pointer; background: rgba(255,255,255,0.04); color: var(--text);
+    transition: transform .06s ease, border-color .15s ease, background .15s ease; }
   .btn:hover { transform: translateY(-1px); border-color: rgba(96,165,250,0.35); }
-  .btn:active { transform: translateY(0); }
-  .btn-primary {
-    background: linear-gradient(180deg, var(--brand), var(--brand-strong));
-    border-color: transparent;
-    color: white;
-  }
+  .btn-primary { background: linear-gradient(180deg, var(--brand), var(--brand-strong)); border-color: transparent; color: white; }
   .btn-secondary { color: var(--brand); border-color: rgba(96,165,250,0.35); }
 
-  .status {
-    padding: 16px;
-    border-top: 1px dashed var(--border);
-    display: grid;
-    gap: 10px;
-    background: rgba(255,255,255,0.03);
-    border-radius: 12px;
-  }
+  .status { padding: 16px; border-top: 1px dashed var(--border); display: grid; gap: 10px; background: rgba(255,255,255,0.03); border-radius: 12px; }
   .status-row { display: flex; justify-content: space-between; align-items: center; }
-  .badge {
-    font-size: 12px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(34,197,94,0.1);
-    color: #34d399;
-    border: 1px solid rgba(34,197,94,0.2);
-  }
+  .badge { font-size: 12px; padding: 6px 10px; border-radius: 999px; background: rgba(34,197,94,0.1); color: #34d399; border: 1px solid rgba(34,197,94,0.2); }
   .badge.pending { background: rgba(245,158,11,0.12); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
-  .badge.failed  { background: rgba(239,68,68,0.12);  color: #ef4444; border-color: rgba(239,68,68,0.3); }
+  .badge.failed  { background: rgba(239,68,68,0.12); color: #ef4444; border-color: rgba(239,68,68,0.3); }
   .badge.finished{ background: rgba(59,130,246,0.13); color: #60a5fa; border-color: rgba(59,130,246,0.35); }
 
-  .progress {
-    height: 10px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 999px;
-    overflow: hidden;
-  }
-  .progress > div {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, var(--success), var(--accent));
-    transition: width .35s ease;
-  }
-  .log {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 13px;
-    color: #d1d5db;
-    max-height: 220px;
-    overflow-y: auto;
-    padding-right: 6px;
-  }
+  .progress { height: 10px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .progress > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--success), var(--accent)); transition: width .35s ease; }
+  .log { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; color: #d1d5db;
+    max-height: 220px; overflow-y: auto; padding-right: 6px; }
   .log-line { padding: 2px 0; border-bottom: 1px dashed rgba(255,255,255,0.06); }
-  .muted { color: var(--muted); }
 
   .plans { margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
   @media (max-width: 960px) { .plans { grid-template-columns: 1fr; } }
-  .plan {
-    padding: 22px;
-    display: grid;
-    gap: 12px;
-    text-align: left;
-  }
+  .plan { padding: 22px; display: grid; gap: 12px; text-align: left; }
   .plan.recommended { outline: 2px solid rgba(96,165,250,0.45); }
   .plan h3 { margin: 0; font-size: 18px; letter-spacing: .01em; }
   .price { font-size: 28px; font-weight: 800; }
   .features { margin: 6px 0 0; padding: 0 0 0 18px; color: var(--muted); }
 `;
 
-/* ============================
-   Config / Endpoints (env-friendly)
-============================ */
-// REST
+/* ========== Config / Endpoints (CRA env) ========== */
+// REST (you can move these to envs later if you want)
 const FORGEIQ_API_ENDPOINT = "https://forgeiq-backend-production.up.railway.app/demo/pipeline";
 const STRIPE_CHECKOUT_ENDPOINT = "https://forgeiq-backend-production.up.railway.app/api/create-checkout-session";
 
-// Realtime (Pusher/Soketi)
-const VITE_PUSHER_KEY = import.meta.env.VITE_PUSHER_KEY;
-const VITE_PUSHER_HOST = import.meta.env.VITE_PUSHER_HOST; // e.g., soketi-forgeiq-production.up.railway.app
-const VITE_PUSHER_PORT = Number(import.meta.env.VITE_PUSHER_PORT || 443);
-const VITE_PUSHER_FORCE_TLS = String(import.meta.env.VITE_PUSHER_FORCE_TLS || "true") === "true";
+// Realtime (Pusher/Soketi) — CRA exposes REACT_APP_* envs
+const PUSHER_KEY = process.env.REACT_APP_PUSHER_KEY;
+const PUSHER_HOST = process.env.REACT_APP_PUSHER_HOST; // e.g., soketi-...up.railway.app
+const PUSHER_PORT = Number(process.env.REACT_APP_PUSHER_PORT || 443);
+const PUSHER_FORCE_TLS = String(process.env.REACT_APP_PUSHER_FORCE_TLS || "true") === "true";
 
-// Stripe
-const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-
-// Stripe init
+// Stripe (public key for browser)
+const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY;
 const stripePromise = STRIPE_PUBLIC_KEY ? loadStripe(STRIPE_PUBLIC_KEY) : Promise.resolve(null);
 
-// Limits
 const FREE_DEMO_LIMIT = 5;
 
-// Types
-/**
- * @typedef {Object} TaskUpdate
- * @property {string} task_id
- * @property {string=} status
- * @property {number=} progress
- * @property {string=} current_stage
- * @property {string=} logs
- * @property {Object=} details
- * @property {string=} timestamp
- */
+/** @typedef {{task_id: string, status?: string, progress?: number, current_stage?: string, logs?: string}} TaskUpdate */
 
 const ForgeIQDemo = () => {
   const [prompt, setPrompt] = useState(
@@ -249,45 +107,29 @@ const ForgeIQDemo = () => {
   const pusherRef = useRef(null);
   const channelRef = useRef(null);
 
-  // Plans
   const plans = [
-    {
-      id: "free-demo",
-      name: "Free Demo",
-      desc: "Explore ForgeIQ with limited runs.",
-      features: ["Up to 5 live demo runs", "Basic pipeline generation", "Realtime status", "No API key required"]
-    },
-    {
-      id: "pro",
-      name: "Professional",
-      price: "$999",
-      period: "month",
-      recommended: true,
+    { id: "free-demo", name: "Free Demo", desc: "Explore ForgeIQ with limited runs.",
+      features: ["Up to 5 live demo runs", "Basic pipeline generation", "Realtime status", "No API key required"] },
+    { id: "pro", name: "Professional", price: "$999", period: "month", recommended: true,
       features: ["All Demo features", "100,000 runs/month", "Full API Access", "Email Support", "Managed Deployments"],
-      priceId: "price_1..." // Replace with your Stripe price ID
-    },
-    {
-      id: "enterprise",
-      name: "Enterprise",
-      price: "Custom",
-      period: "quote",
+      priceId: "price_1..." }, // Replace with your Stripe price ID
+    { id: "enterprise", name: "Enterprise", price: "Custom", period: "quote",
       features: ["All Pro features", "Unlimited runs", "Multi-cloud Optimization", "Dedicated Agent Support", "Premium SLA"],
-      priceId: null
-    }
+      priceId: null }
   ];
 
-  // Init Pusher (once)
+  // Init Pusher once
   useEffect(() => {
-    if (!VITE_PUSHER_KEY || !VITE_PUSHER_HOST) {
-      console.warn("Pusher env missing; realtime disabled.");
+    if (!PUSHER_KEY || !PUSHER_HOST) {
+      console.warn("Pusher env missing; realtime disabled.", { PUSHER_KEY, PUSHER_HOST });
       return;
     }
     if (!pusherRef.current) {
-      pusherRef.current = new Pusher(VITE_PUSHER_KEY, {
-        wsHost: VITE_PUSHER_HOST,
-        wsPort: VITE_PUSHER_PORT,
-        wssPort: VITE_PUSHER_PORT,
-        forceTLS: VITE_PUSHER_FORCE_TLS,
+      pusherRef.current = new Pusher(PUSHER_KEY, {
+        wsHost: PUSHER_HOST,
+        wsPort: PUSHER_PORT,
+        wssPort: PUSHER_PORT,
+        forceTLS: PUSHER_FORCE_TLS,
         enabledTransports: ["ws", "wss"],
         disableStats: true
       });
@@ -367,12 +209,9 @@ const ForgeIQDemo = () => {
 
   const checkout = async (priceId, planId) => {
     try {
-      if (!priceId) {
-        window.location.href = "/contact?plan=enterprise";
-        return;
-      }
+      if (!priceId) { window.location.href = "/contact?plan=enterprise"; return; }
       const stripe = await stripePromise;
-      if (!stripe) throw new Error("Stripe not configured. Missing VITE_STRIPE_PUBLIC_KEY.");
+      if (!stripe) throw new Error("Stripe not configured. Missing REACT_APP_STRIPE_PUBLIC_KEY.");
 
       const res = await fetch(STRIPE_CHECKOUT_ENDPOINT, {
         method: "POST",
@@ -399,7 +238,6 @@ const ForgeIQDemo = () => {
     <div className="forgeiq-demo">
       <style>{styles}</style>
       <div className="page">
-
         {/* HERO */}
         <div className="hero">
           <div className="card hero-card">
@@ -407,25 +245,15 @@ const ForgeIQDemo = () => {
             <p className="subtitle">
               Describe what you want built. ForgeIQ generates, tests, packages, and deploys code — while you watch progress in real time.
             </p>
-
             <div className="kpis">
-              <div className="kpi">
-                <span className="label">Runtime</span>
-                <span className="value">seconds to live preview</span>
-              </div>
-              <div className="kpi">
-                <span className="label">Coverage</span>
-                <span className="value">tests & builds</span>
-              </div>
-              <div className="kpi">
-                <span className="label">Targets</span>
-                <span className="value">Docker · K8s · ECS</span>
-              </div>
+              <div className="kpi"><span className="label">Runtime</span><span className="value">seconds to live preview</span></div>
+              <div className="kpi"><span className="label">Coverage</span><span className="value">tests & builds</span></div>
+              <div className="kpi"><span className="label">Targets</span><span className="value">Docker · K8s · ECS</span></div>
             </div>
           </div>
 
           {/* DEMO PANEL */}
-          <div className="card hero-card">
+          <div className="card hero-card" id="demo">
             <div className="demo">
               <textarea
                 className="textarea"
@@ -435,18 +263,10 @@ const ForgeIQDemo = () => {
                 disabled={taskStatus === "pending" || demoRuns >= FREE_DEMO_LIMIT}
               />
               <div className="controls">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => { setPrompt(""); setLogs([]); setError(null); }}
-                  disabled={taskStatus === "pending"}
-                >
+                <button className="btn btn-secondary" onClick={() => { setPrompt(""); setLogs([]); setError(null); }} disabled={taskStatus === "pending"}>
                   Reset
                 </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={startDemo}
-                  disabled={taskStatus === "pending" || !prompt.trim() || demoRuns >= FREE_DEMO_LIMIT}
-                >
+                <button className="btn btn-primary" onClick={startDemo} disabled={taskStatus === "pending" || !prompt.trim() || demoRuns >= FREE_DEMO_LIMIT}>
                   {taskStatus === "pending" ? "Starting…" : "Run Demo"}
                 </button>
               </div>
@@ -454,18 +274,14 @@ const ForgeIQDemo = () => {
               <div className="status">
                 <div className="status-row">
                   <div className="muted">Live Status</div>
-                  <div className={badgeClass}>
-                    {taskStatus === "idle" ? "ready" : taskStatus}
-                  </div>
+                  <div className={badgeClass}>{taskStatus === "idle" ? "ready" : taskStatus}</div>
                 </div>
                 <div className="progress"><div style={{ width: `${taskProgress}%` }} /></div>
                 <div className="muted">Demo runs used: {demoRuns} / {FREE_DEMO_LIMIT}</div>
                 {error && <div style={{ color: "#fca5a5", fontWeight: 600 }}>{error}</div>}
                 {logs.length > 0 && (
                   <div className="log">
-                    {logs.map((l, i) => (
-                      <div className="log-line" key={i}>{l}</div>
-                    ))}
+                    {logs.map((l, i) => (<div className="log-line" key={i}>{l}</div>))}
                   </div>
                 )}
               </div>
@@ -478,20 +294,12 @@ const ForgeIQDemo = () => {
           {plans.map((p) => (
             <div key={p.id} className={`card plan ${p.recommended ? "recommended" : ""}`}>
               <h3>{p.name}</h3>
-              {"price" in p && (
-                <div className="price">
-                  {p.price} <span className="muted">/ {p.period}</span>
-                </div>
-              )}
-              <ul className="features">
-                {p.features.map((f, idx) => <li key={idx}>{f}</li>)}
-              </ul>
+              {"price" in p && (<div className="price">{p.price} <span className="muted">/ {p.period}</span></div>)}
+              <ul className="features">{p.features.map((f, idx) => <li key={idx}>{f}</li>)}</ul>
               {p.id === "free-demo" ? (
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
                   <a className="btn" href="#top">What can it build?</a>
-                  <a className="btn btn-primary" href="#top" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-                    Try Demo
-                  </a>
+                  <a className="btn btn-primary" href="#demo" onClick={(e) => { e.preventDefault(); document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" }); }}>Try Demo</a>
                 </div>
               ) : (
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
