@@ -1,33 +1,9 @@
+// src/App.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Pusher, { Channel } from "pusher-js";
+import Pusher from "pusher-js";
 
-/** =========================
- *  BACKEND HOST
- *  ========================= */
 const API_BASE = "https://forgeiq-production.up.railway.app";
 
-/** =========================
- *  Runtime Config Types
- *  ========================= */
-type PublicConfig = {
-  llm: {
-    provider_priority: string;        // e.g., "openai,gemini,codex"
-    openai_model: string;
-    gemini_model: string;
-  };
-  realtime: {
-    wsHost: string;
-    wsPort: number;
-    forceTLS: boolean;
-    cluster: string;                  // required by pusher-js
-    appId: string;                    // for reference
-    publicKey: string;                // Pusher key
-  };
-};
-
-/** ================
- *  Basic UI Styles
- *  ================ */
 const styles = `
 :root {
   --bg:#0b1117; --panel:#0f1520; --panel-2:#0d1420; --text:#e6edf3; --muted:#9fb0c2;
@@ -76,42 +52,36 @@ hr.sep { height:1px; border:0; background: linear-gradient(90deg, transparent, v
 .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
 `;
 
-/** ============
- *  Type Models
- *  ============ */
-type GeneralSummary = {
-  active_projects_count: number;
-  total_agents_defined: number;
-  agents_online_count: number;
-  critical_alerts_count: number;
-  system_health_status: "Operational" | "Degraded" | "Minor Issues" | string;
-};
-type ProjectSummary = { name: string; last_build_status: string; last_build_timestamp: string; repo_url?: string; };
-type PipelineSummary = { dag_id: string; project_id: string; status: string; started_at: string; trigger: string; };
-type DeploymentSummary = { deployment_id: string; service_name: string; target_environment: string; commit_sha: string; status: string; completed_at: string; };
-type ForgeIQEvent = {
-  event?: string;
-  task_id: string;
-  task_type: string;
-  status: string;
-  current_stage?: string;
-  progress?: number;
-  logs?: string;
-  payload?: any;
-  output_data?: any;
-  details?: any;
-  timestamp?: number;
-  source?: string;
-};
+async function getConfig() {
+  const res = await fetch(`${API_BASE}/config`);
+  if (!res.ok) throw new Error("Failed to fetch /config");
+  return res.json();
+}
+async function loadGeneralSummaryReal() {
+  const r = await fetch(`${API_BASE}/api/forgeiq/system/overall-summary`);
+  if (!r.ok) throw new Error("overall-summary error");
+  return r.json();
+}
+async function loadProjectsSummaryReal() {
+  const r = await fetch(`${API_BASE}/api/forgeiq/projects/summary?limit=3`);
+  if (!r.ok) throw new Error("projects summary error");
+  return r.json();
+}
+async function loadPipelinesSummaryReal() {
+  const r = await fetch(`${API_BASE}/api/forgeiq/pipelines/recent-summary?limit=3`);
+  if (!r.ok) throw new Error("pipelines summary error");
+  return r.json();
+}
+async function loadDeploymentsSummaryReal() {
+  const r = await fetch(`${API_BASE}/api/forgeiq/deployments/recent-summary?limit=3`);
+  if (!r.ok) throw new Error("deployments summary error");
+  return r.json();
+}
 
-/** ====================================
- *  Mocks (used on failure to fetch)
- *  ==================================== */
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-async function loadGeneralSummaryMock(): Promise<GeneralSummary> {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function loadGeneralSummaryMock() {
   await sleep(200);
-  const choices = ["Operational", "Degraded", "Minor Issues"] as const;
+  const choices = ["Operational", "Degraded", "Minor Issues"];
   return {
     active_projects_count: Math.floor(Math.random() * 8) + 3,
     total_agents_defined: 12,
@@ -120,10 +90,10 @@ async function loadGeneralSummaryMock(): Promise<GeneralSummary> {
     system_health_status: choices[Math.floor(Math.random() * choices.length)],
   };
 }
-async function loadProjectsSummaryMock(): Promise<ProjectSummary[]> {
+async function loadProjectsSummaryMock() {
   await sleep(200);
   const names = ["PhoenixCI", "NovaBuild", "QuantumDeploy"];
-  const statuses = ["SUCCESSFUL", "FAILED", "IN_PROGRESS", "COMPLETED_SUCCESS"] as const;
+  const statuses = ["SUCCESSFUL", "FAILED", "IN_PROGRESS", "COMPLETED_SUCCESS"];
   return names.map((n) => ({
     name: n,
     last_build_status: statuses[Math.floor(Math.random() * statuses.length)],
@@ -131,9 +101,9 @@ async function loadProjectsSummaryMock(): Promise<ProjectSummary[]> {
     repo_url: `https://github.com/example/${n.toLowerCase()}`,
   }));
 }
-async function loadPipelinesSummaryMock(): Promise<PipelineSummary[]> {
+async function loadPipelinesSummaryMock() {
   await sleep(200);
-  const statuses = ["COMPLETED_SUCCESS", "FAILED", "RUNNING"] as const;
+  const statuses = ["COMPLETED_SUCCESS", "FAILED", "RUNNING"];
   const projects = ["PhoenixCI", "NovaBuild"];
   const mkId = () => "dag_" + Math.random().toString(16).slice(2, 10);
   const triggers = ["Commit abc1234", "Manual via API", "Scheduled"];
@@ -145,9 +115,9 @@ async function loadPipelinesSummaryMock(): Promise<PipelineSummary[]> {
     trigger: triggers[Math.floor(Math.random() * triggers.length)],
   }));
 }
-async function loadDeploymentsSummaryMock(): Promise<DeploymentSummary[]> {
+async function loadDeploymentsSummaryMock() {
   await sleep(200);
-  const statuses = ["SUCCESSFUL", "FAILED", "IN_PROGRESS"] as const;
+  const statuses = ["SUCCESSFUL", "FAILED", "IN_PROGRESS"];
   const services = ["forgeiq-backend", "codenav-agent", "plan-agent"];
   const envs = ["staging", "production"];
   const mkId = () => "depl_" + Math.random().toString(16).slice(2, 10);
@@ -162,104 +132,60 @@ async function loadDeploymentsSummaryMock(): Promise<DeploymentSummary[]> {
   }));
 }
 
-/** =======================================
- *  Real endpoint loaders with fallback
- *  ======================================= */
-async function getConfig(): Promise<PublicConfig> {
-  const res = await fetch(`${API_BASE}/config`);
-  if (!res.ok) throw new Error("Failed to fetch /config");
-  return res.json();
-}
-async function loadGeneralSummaryReal(): Promise<GeneralSummary> {
-  const r = await fetch(`${API_BASE}/api/forgeiq/system/overall-summary`);
-  if (!r.ok) throw new Error("overall-summary  error");
-  return r.json();
-}
-async function loadProjectsSummaryReal(): Promise<ProjectSummary[]> {
-  const r = await fetch(`${API_BASE}/api/forgeiq/projects/summary?limit=3`);
-  if (!r.ok) throw new Error("projects summary error");
-  return r.json();
-}
-async function loadPipelinesSummaryReal(): Promise<PipelineSummary[]> {
-  const r = await fetch(`${API_BASE}/api/forgeiq/pipelines/recent-summary?limit=3`);
-  if (!r.ok) throw new Error("pipelines summary error");
-  return r.json();
-}
-async function loadDeploymentsSummaryReal(): Promise<DeploymentSummary[]> {
-  const r = await fetch(`${API_BASE}/api/forgeiq/deployments/recent-summary?limit=3`);
-  if (!r.ok) throw new Error("deployments summary error");
-  return r.json();
-}
-/** Flip to real; if it throws, we catch and fallback to mocks */
+// Real with fallback:
 const loadGeneralSummary = () => loadGeneralSummaryReal().catch(loadGeneralSummaryMock);
 const loadProjectsSummary = () => loadProjectsSummaryReal().catch(loadProjectsSummaryMock);
 const loadPipelinesSummary = () => loadPipelinesSummaryReal().catch(loadPipelinesSummaryMock);
 const loadDeploymentsSummary = () => loadDeploymentsSummaryReal().catch(loadDeploymentsSummaryMock);
 
-/** ============
- *  Utilities
- *  ============ */
-function fmtDate(s?: string) {
+function fmtDate(s) {
   if (!s) return "N/A";
-  try {
-    const d = new Date(s);
-    return d.toLocaleString();
-  } catch {
-    return s;
-  }
+  try { return new Date(s).toLocaleString(); } catch { return s; }
 }
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }) {
   const lc = (status || "").toLowerCase();
   const cls =
-    lc.includes("success") || lc === "operational"
-      ? "ok"
-      : lc.includes("fail") || lc.includes("degrad")
-      ? "warn"
-      : lc.includes("issue") || lc.includes("error")
-      ? "err"
-      : "";
+    lc.includes("success") || lc === "operational" ? "ok" :
+    lc.includes("fail") || lc.includes("degrad") ? "warn" :
+    lc.includes("issue") || lc.includes("error") ? "err" : "";
   return <span className={`badge ${cls}`}>{status}</span>;
 }
-const toProviders = (csv: string) =>
-  csv.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+const toProviders = (csv) => csv.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 
-/** ==============
- *  Main Component
- *  ============== */
 export default function App() {
   // Runtime config
-  const [cfg, setCfg] = useState<PublicConfig | null>(null);
+  const [cfg, setCfg] = useState(null);
 
   // Dashboard data
   const [loading, setLoading] = useState(true);
-  const [general, setGeneral] = useState<GeneralSummary | null>(null);
-  const [projects, setProjects] = useState<ProjectSummary[]>([]);
-  const [pipelines, setPipelines] = useState<PipelineSummary[]>([]);
-  const [deployments, setDeployments] = useState<DeploymentSummary[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [general, setGeneral] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [pipelines, setPipelines] = useState([]);
+  const [deployments, setDeployments] = useState([]);
+  const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Realtime
-  const pusherRef = useRef<Pusher | null>(null);
-  const channelRef = useRef<Channel | null>(null);
-  const [eventFeed, setEventFeed] = useState<ForgeIQEvent[]>([]); // rolling live events
+  const pusherRef = useRef(null);
+  const channelRef = useRef(null);
+  const [eventFeed, setEventFeed] = useState([]);
 
-  // AI Assistant
+  // Assistant
   const [prompt, setPrompt] = useState("");
-  const [assistantLog, setAssistantLog] = useState<{ role: "user" | "assistant"; content: string; at: number }[]>([]);
+  const [assistantLog, setAssistantLog] = useState([]);
   const [providersCsv, setProvidersCsv] = useState("openai,gemini");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Pipeline Runner
+  // Pipeline runner
   const [proj, setProj] = useState("PhoenixCI");
   const [projId, setProjId] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [branch, setBranch] = useState("main");
   const [trigger, setTrigger] = useState("Manual");
   const [params, setParams] = useState("");
-  const [lastPipelineTaskId, setLastPipelineTaskId] = useState<string | null>(null);
+  const [lastPipelineTaskId, setLastPipelineTaskId] = useState(null);
 
-  /** Load runtime config then dashboard data */
+  // Config + initial data
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -267,13 +193,8 @@ export default function App() {
         const conf = await getConfig();
         if (!alive) return;
         setCfg(conf);
-        // Initialize provider field from backend default, if present
-        if (conf?.llm?.provider_priority) {
-          setProvidersCsv(conf.llm.provider_priority);
-        }
-      } catch (e) {
-        // Non-fatal; UI still works with defaults
-      }
+        if (conf?.llm?.provider_priority) setProvidersCsv(conf.llm.provider_priority);
+      } catch (e) {/* non-fatal */}
       try {
         setLoading(true);
         const [g, pr, pi, de] = await Promise.all([
@@ -285,9 +206,9 @@ export default function App() {
         if (!alive) return;
         setGeneral(g); setProjects(pr); setPipelines(pi); setDeployments(de);
         setError(null);
-      } catch (e: any) {
+      } catch (e) {
         if (!alive) return;
-        setError(e?.message ?? String(e));
+        setError(e?.message || String(e));
       } finally {
         if (alive) setLoading(false);
       }
@@ -295,11 +216,10 @@ export default function App() {
     return () => { alive = false; };
   }, [refreshKey]);
 
-  /** Realtime wiring with Pusher/Soketi */
+  // Realtime wiring
   useEffect(() => {
     if (!cfg?.realtime?.publicKey) return;
 
-    // Teardown previous
     if (channelRef.current) { channelRef.current.unbind_all(); channelRef.current.unsubscribe(); channelRef.current = null; }
     if (pusherRef.current) { pusherRef.current.disconnect(); pusherRef.current = null; }
 
@@ -310,27 +230,19 @@ export default function App() {
       forceTLS: cfg.realtime.forceTLS,
       enabledTransports: ["ws", "wss"],
       disableStats: true,
-      // if you require auth for private- channels:
       authEndpoint: `${API_BASE}/api/broadcasting/auth`,
       auth: { headers: {} },
     });
     const ch = p.subscribe("private-forgeiq");
 
-    const handler = (ev: ForgeIQEvent) => {
-      setEventFeed((old) => {
-        const next = [{ ...(ev || {}), timestamp: ev?.timestamp || Date.now() }, ...old].slice(0, 200);
-        return next;
-      });
-      // Optional: optimistic dashboard tweaks
-      if (ev?.task_type?.includes("deployment")) {
-        setDeployments((d) => d); // placeholder; could merge by ID
-      }
+    const handler = (ev) => {
+      const withTs = { ...(ev || {}), timestamp: ev?.timestamp || Date.now() };
+      setEventFeed((old) => [withTs, ...old].slice(0, 200));
     };
 
-    ch.bind_global((eventName: string, data: any) => {
-      // Listen to any event name (TaskUpdated, BuildUpdated, DeploymentCompleted, etc.)
+    ch.bind_global((eventName, data) => {
       if (typeof data === "string") {
-        try { handler(JSON.parse(data)); } catch { /* ignore */ }
+        try { handler(JSON.parse(data)); } catch {}
       } else {
         handler(data);
       }
@@ -345,11 +257,10 @@ export default function App() {
     };
   }, [cfg?.realtime?.publicKey, cfg?.realtime?.wsHost, cfg?.realtime?.wsPort, cfg?.realtime?.forceTLS, cfg?.realtime?.cluster]);
 
-  /** Assistant: send to /gateway with providers */
   const sendPrompt = useCallback(async () => {
     if (!prompt.trim() || isGenerating) return;
     setIsGenerating(true);
-    const userMsg = { role: "user" as const, content: prompt.trim(), at: Date.now() };
+    const userMsg = { role: "user", content: prompt.trim(), at: Date.now() };
     setAssistantLog((log) => [...log, userMsg]);
     setPrompt("");
 
@@ -366,57 +277,33 @@ export default function App() {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Gateway request failed");
-      const j = await res.json(); // {status, task_id, ...}
-      // We’ll append a “placeholder assistant typing” message; the actual answer will arrive via realtime.
-      const placeholder = { role: "assistant" as const, content: "…listening for realtime response", at: Date.now() };
+      await res.json(); // { task_id, ... }
+      const placeholder = { role: "assistant", content: "…listening for realtime response", at: Date.now() };
       setAssistantLog((log) => [...log, placeholder]);
-
-      // Optional: poll fallback if WS misses (short-lived)
-      setTimeout(async () => {
-        try {
-          const poll = await fetch(`${API_BASE}/forgeiq/status/${j.task_id}`);
-          if (poll.ok) {
-            const sj = await poll.json();
-            const text = sj?.output_data?.llm_response;
-            if (text) {
-              setAssistantLog((log) => {
-                // replace placeholder
-                const idx = log.findIndex((m) => m.content === "…listening for realtime response" && m.role === "assistant");
-                const copy = [...log];
-                if (idx >= 0) copy[idx] = { role: "assistant", content: text, at: Date.now() };
-                else copy.push({ role: "assistant", content: text, at: Date.now() });
-                return copy;
-              });
-            }
-          }
-        } catch { /* ignore */ }
-      }, 1800);
-    } catch (e: any) {
+    } catch (e) {
       setAssistantLog((log) => [...log, { role: "assistant", content: `Error: ${e?.message || e}`, at: Date.now() }]);
     } finally {
       setIsGenerating(false);
     }
   }, [prompt, providersCsv, assistantLog, isGenerating]);
 
-  /** When realtime LLM result arrives, patch the chat log */
   useEffect(() => {
-    if (eventFeed.length === 0) return;
+    if (!eventFeed.length) return;
     const ev = eventFeed[0];
-    if (ev?.task_type === "llm_chat_response" && ev?.status?.toLowerCase() === "completed") {
+    if (ev?.task_type === "llm_chat_response" && String(ev?.status).toLowerCase() === "completed") {
       const text = ev?.output_data?.llm_response;
       if (text) {
         setAssistantLog((log) => {
           const idx = log.findIndex((m) => m.content === "…listening for realtime response" && m.role === "assistant");
-          const copy = [...log];
-          if (idx >= 0) copy[idx] = { role: "assistant", content: text, at: Date.now() };
-          else copy.push({ role: "assistant", content: text, at: Date.now() });
-          return copy;
+          const next = [...log];
+          if (idx >= 0) next[idx] = { role: "assistant", content: text, at: Date.now() };
+          else next.push({ role: "assistant", content: text, at: Date.now() });
+          return next;
         });
       }
     }
   }, [eventFeed]);
 
-  /** Run live pipeline */
   const runLivePipeline = useCallback(async () => {
     const providers = toProviders(providersCsv);
     const payload = {
@@ -436,12 +323,11 @@ export default function App() {
       if (!r.ok) throw new Error(await r.text());
       const j = await r.json();
       setLastPipelineTaskId(j.forgeiq_task_id);
-    } catch (e: any) {
+    } catch (e) {
       alert(`Pipeline start failed: ${e?.message || e}`);
     }
   }, [proj, projId, repoUrl, branch, trigger, params, providersCsv]);
 
-  /** Derived */
   const healthBadge = useMemo(() => <StatusBadge status={general?.system_health_status ?? "Unknown"} />, [general]);
 
   return (
@@ -455,14 +341,10 @@ export default function App() {
             <button className="btn" onClick={() => window.open(`${API_BASE}/docs`, "_blank")}>API Docs</button>
           </div>
         </div>
-        <p className="p">
-          Operational snapshot, realtime task stream, and a generative AI copilot. Edwin-style capabilities: human-readable summaries, RCA, and
-          actionable recommendations with conversational troubleshooting.
-        </p>
+        <p className="p">Operational snapshot, realtime task stream, and a generative AI copilot.</p>
 
         {error && <div className="card" style={{ borderColor: "var(--red)" }}>Error: {error}</div>}
 
-        {/* Top Row: KPIs + Noise/Insights */}
         <div className="grid grid-4">
           <div className="card">
             <div className="row"><div className="sectionTitle">System Health &amp; Metrics</div>{healthBadge}</div>
@@ -472,22 +354,17 @@ export default function App() {
               <div className="kpi"><div className="label">Critical Alerts</div><div className="value">{general?.critical_alerts_count ?? "—"}</div></div>
               <div className="kpi"><div className="label">Overall</div><div className="value">{general?.system_health_status ?? "Unknown"}</div></div>
             </div>
-            <div className="hint" style={{ marginTop: 8 }}>
-              Inspired by Edwin AI patterns: compress alert noise, correlate, and summarize into actionable insights. {/* Edwin references: LM docs/news */}
-            </div>
           </div>
 
-          {/* Edwin-style "Noise Reduced" + "Insights Today" */}
           <div className="card">
             <div className="sectionTitle">Event Intelligence</div>
             <div className="grid grid-2" style={{ marginTop: 6 }}>
               <div className="kpi"><div className="label">Noise Reduction</div><div className="value">90–95%</div></div>
               <div className="kpi"><div className="label">Insights Today</div><div className="value">{Math.max(3, (general?.critical_alerts_count ?? 0) + 2)}</div></div>
             </div>
-            <div className="hint">Automatic dedupe, correlation, & prioritization.</div>
+            <div className="hint">Automatic dedupe, correlation & prioritization.</div>
           </div>
 
-          {/* Realtime Feed */}
           <div className="card">
             <div className="sectionTitle">Realtime Task Feed</div>
             <div className="feed">
@@ -505,7 +382,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Provider Defaults */}
           <div className="card">
             <div className="sectionTitle">LLM Routing Defaults</div>
             <div className="chips">
@@ -517,7 +393,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Projects Snapshot */}
         <hr className="sep" />
         <div className="row">
           <div className="sectionTitle">Projects Snapshot</div>
@@ -537,7 +412,6 @@ export default function App() {
           {projects.length === 0 && <div className="card">No project summaries to display.</div>}
         </div>
 
-        {/* Pipelines & Builds */}
         <hr className="sep" />
         <div className="row">
           <div className="sectionTitle">Recent Pipelines / Builds</div>
@@ -551,7 +425,6 @@ export default function App() {
                 Project: {p.project_id} • Started: {fmtDate(p.started_at)} • Trigger: {p.trigger}
               </div>
               <div className="timeline" style={{ marginTop: 10 }}>
-                {/* Edwin-style concise timeline slots */}
                 <div className="trow"><div className="dot" /><div className="content caption">Build & unit tests</div></div>
                 <div className="trow"><div className="dot" /><div className="content caption">Package & artifact upload</div></div>
                 <div className="trow"><div className="dot" /><div className="content caption">Ready for deploy</div></div>
@@ -561,7 +434,6 @@ export default function App() {
           {pipelines.length === 0 && <div className="card">No recent pipelines to display.</div>}
         </div>
 
-        {/* Deployments */}
         <hr className="sep" />
         <div className="row">
           <div className="sectionTitle">Recent Deployments</div>
@@ -597,27 +469,22 @@ export default function App() {
           </table>
         </div>
 
-        {/* ==== Right Rail: AI Assistant + Live Pipeline Runner ==== */}
         <hr className="sep" />
         <div className="grid grid-2">
-          {/* AI Assistant */}
           <div className="card">
             <div className="row">
               <div className="sectionTitle">🤖 Generative AI Assistant</div>
-              <div className="chips">
-                <span className="pill">Priority: {providersCsv}</span>
-              </div>
+              <div className="chips"><span className="pill">Priority: {providersCsv}</span></div>
             </div>
             <div className="hint">Conversational troubleshooting, summaries, RCA hints & recommendations.</div>
             <div style={{ marginTop: 10 }}>
               <label className="caption">Providers (comma order)</label>
               <input className="input" value={providersCsv} onChange={(e) => setProvidersCsv(e.target.value)} placeholder="openai,gemini,codex" />
-              <div className="hint">First available provider is used; others are fallback.</div>
+              <div className="hint">First available provider is used; others fallback.</div>
             </div>
-
             <div style={{ marginTop: 12 }}>
               <label className="caption">Prompt</label>
-              <textarea className="textarea" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Summarize the last pipeline run and propose fixes for flaky tests…" />
+              <textarea className="textarea" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Summarize the last pipeline run and propose fixes…" />
               <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
                 <button className="btn primary" disabled={isGenerating || !prompt.trim()} onClick={sendPrompt}>
                   {isGenerating ? "Sending…" : "Ask Assistant"}
@@ -625,7 +492,6 @@ export default function App() {
                 <button className="btn" onClick={() => setAssistantLog([])}>Clear</button>
               </div>
             </div>
-
             <div style={{ marginTop: 14 }}>
               <div className="sectionTitle">Conversation</div>
               <div className="feed" style={{ maxHeight: 320 }}>
@@ -643,7 +509,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Live Pipeline Runner */}
           <div className="card">
             <div className="row">
               <div className="sectionTitle">🛠️ Live Pipeline Runner</div>
@@ -661,7 +526,6 @@ export default function App() {
               <button className="btn primary" onClick={runLivePipeline}>Run Pipeline</button>
               <button className="btn" onClick={() => setLastPipelineTaskId(null)}>Reset</button>
             </div>
-
             <div style={{ marginTop: 14 }}>
               <div className="sectionTitle">Progress & Insights</div>
               <div className="timeline">
@@ -687,29 +551,26 @@ export default function App() {
                   <div className="caption">Run a pipeline to see live stages here.</div>
                 )}
               </div>
-
-              {/* Edwin-style RCA and Actions slots */}
               <div className="grid grid-2" style={{ marginTop: 10 }}>
                 <div className="card">
                   <div className="sectionTitle">Suggested RCA</div>
-                  <div className="caption">When the assistant or pipeline emits RCA hints, they’ll appear here (e.g., flaky test cluster, misconfigured secret, resource throttling).</div>
+                  <div className="caption">When RCA hints arrive, they’ll appear here (flaky test cluster, misconfigured secret, throttling, etc.).</div>
                 </div>
                 <div className="card">
                   <div className="sectionTitle">Actionable Recommendations</div>
-                  <div className="caption">Proposed next steps, guardrailed auto-remediations, or links to runbooks — fed by assistant responses or task outputs.</div>
+                  <div className="caption">Next steps or auto-remediations, fed by assistant responses or task outputs.</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Agents placeholder */}
         <hr className="sep" />
         <div className="row">
           <div className="sectionTitle">Agents Status Snapshot</div>
           <button className="btn" onClick={() => alert("Agents page coming soon")}>View Agent Details</button>
         </div>
-        <div className="card"><div className="caption">This will reflect total / active / issues once the backend endpoint is ready.</div></div>
+        <div className="card"><div className="caption">Will reflect total / active / issues once the backend endpoint is ready.</div></div>
 
         {loading && (<><hr className="sep" /><div className="caption">Loading…</div></>)}
       </div>
