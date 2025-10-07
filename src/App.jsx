@@ -5,7 +5,7 @@ import Pusher from "pusher-js";
 /** =========================
  *  Backend host
  *  ========================= */
-const API_BASE = "https://forgeiq-production.up.railway.app";
+const API_BASE = "https://forgeiq-backend-production.up.railway.app";
 
 /** ================
  *  Styles
