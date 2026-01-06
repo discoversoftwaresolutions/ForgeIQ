@@ -403,6 +403,114 @@ function Overview({ cfg }) {
   );
 }
 
+function AGIConsole({ cfg }) {
+  const [endpoint, setEndpoint] = useState("default"); // selected AGI endpoint
+  const [input, setInput] = useState("");
+  const [log, setLog] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [lastTaskId, setLastTaskId] = useState(null);
+  const { events } = usePusher(cfg);
+
+  // Listen for real-time responses
+  useEffect(() => {
+    if (!events.length || !lastTaskId) return;
+    const ev = events[0];
+    if (
+      ev.task_type === "nlp_response" &&
+      String(ev.task_id) === String(lastTaskId) &&
+      String(ev.status || "").toLowerCase() === "completed" &&
+      ev.output_data?.response
+    ) {
+      setLog((prev) => {
+        const idx = prev.findIndex(
+          (m) => m.role === "assistant" && m.content === "…listening for realtime response"
+        );
+        const next = [...prev];
+        const msg = { role: "assistant", content: ev.output_data.response, at: Date.now() };
+        if (idx >= 0) next[idx] = msg;
+        else next.push(msg);
+        return next;
+      });
+      setLastTaskId(null);
+    }
+  }, [events, lastTaskId]);
+
+  const sendInput = async () => {
+    if (!input.trim() || busy) return;
+    const userMsg = { role: "user", content: input.trim(), at: Date.now() };
+    setLog((prev) => [...prev, userMsg]);
+    setInput(""); 
+    setBusy(true);
+    try {
+      const res = await postJSON(`${API_BASE}/intelli/${endpoint}`, {
+        prompt: userMsg.content,
+        history: log.map((m) => ({ role: m.role, content: m.content })),
+      });
+      setLastTaskId(res?.task_id || null);
+      setLog((prev) => [
+        ...prev,
+        { role: "assistant", content: "…listening for realtime response", at: Date.now() },
+      ]);
+    } catch (e) {
+      setLog((prev) => [...prev, { role: "assistant", content: `Error: ${e?.message}`, at: Date.now() }]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="row" style={{ marginBottom: 8 }}>
+        <h1 className="h1">🧠 AGI NLP & Observation</h1>
+        <span className="pill">{busy ? "Busy…" : "Idle"}</span>
+      </div>
+
+      <div className="card">
+        <label className="caption">Select Endpoint</label>
+        <select className="btn" style={{ width: "100%" }} value={endpoint} onChange={(e) => setEndpoint(e.target.value)}>
+          {(cfg?.agi_endpoints || ["default"]).map((ep) => (
+            <option key={ep} value={ep}>{ep}</option>
+          ))}
+        </select>
+
+        <label className="caption" style={{ marginTop: 10 }}>Input</label>
+        <textarea
+          className="btn"
+          style={{ width: "100%", minHeight: 90 }}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask the AGI endpoint anything…"
+        />
+
+        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+          <button className="btn" disabled={busy || !input.trim()} onClick={sendInput}>
+            {busy ? "Sending…" : "Send"}
+          </button>
+          <button className="btn" onClick={() => setLog([])}>Clear</button>
+        </div>
+      </div>
+
+      <hr className="sep" />
+      <div className="card">
+        <div className="sectionTitle">Conversation Log</div>
+        <div className="feed" style={{ maxHeight: 420 }}>
+          {log.map((m, i) => (
+            <div key={i} className="feed-item">
+              <div className="row">
+                <strong>{m.role === "user" ? "You" : "AGI"}</strong>
+                <span className="caption">{new Date(m.at).toLocaleTimeString()}</span>
+              </div>
+              <div style={{ whiteSpace: "pre-wrap", marginTop: 6 }}>{m.content}</div>
+            </div>
+          ))}
+          {log.length === 0 && <div className="caption">No messages yet.</div>}
+        </div>
+      </div>
+    </>
+  );
+}
+
+
 function CoraStudio({ cfg }) {
   // A full-page version of Cora with session log
   const [providersCsv, setProvidersCsv] = useState(cfg?.llm?.provider_priority || "openai,gemini");
